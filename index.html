@@ -641,6 +641,23 @@ async function duoRefresh(){
  
 
  try{await duoRefreshResponse(key,lastActorId)}catch(err){$('duoAnswerState').textContent='⚠️ Impossible de vérifier la réponse : '+err.message;$('duoInfo').textContent='⚠️ Erreur de validation : '+err.message;}
+ // V7.18: when the submitted response is hidden by RLS or a missing RPC,
+ // use the actual partner chat message as an independent UI signal.
+ // Server-side dareup_v53_validate still authoritatively checks the submitted response.
+ if(key && lastActorId && lastActorId!==session.user.id && $('duoReviewBar').hidden){
+  const partnerMessages=(messages||[]).filter(m=>m.sender_id===lastActorId);
+  const latest=partnerMessages[partnerMessages.length-1];
+  const cardStarted=state?.card_created_at?new Date(state.card_created_at).getTime():0;
+  const sentAt=latest?new Date(latest.created_at).getTime():0;
+  if(latest && sentAt>=cardStarted){
+   $('duoReviewCaption').textContent=latest.message||'Réponse du partenaire reçue dans le chat';
+   $('duoReviewBar').hidden=false;
+   $('duoReviewConfirm').disabled=false;
+   $('duoModalDone').hidden=false;
+   $('duoModalDone').disabled=false;
+   $('duoAnswerState').textContent='📨 Message reçu dans le chat. Validation possible si la réponse a été enregistrée.';
+  }
+ }
  const last=messages?.length?messages[messages.length-1].id:'';
  let photos=[];
  try{photos=await authenticated('/rest/v1/rpc/dareup_v59_list_photos','POST',{p_room_id:room})||[]}
@@ -675,7 +692,7 @@ $('duoNewPartner').onclick=async()=>{
  catch(e){matchStatus.textContent='Erreur : '+e.message}
 };
 $('duoTruth').onclick=()=>duoChoose('truth');$('duoDare').onclick=()=>duoChoose('dare');
-$('duoChatForm').onsubmit=async e=>{e.preventDefault();if(!matchRoom)return;const input=$('duoChatText'),message=input.value.trim();if(!message)return;const isReply=(v78CanReply&&!v78HasReply&&!v78Discuss)||duoReplyArmed;try{await authenticated('/rest/v1/room_messages','POST',{room_id:matchRoom.id,sender_id:session.user.id,message});input.value='';if(isReply){duoReplyArmed=false;$('duoChatReplyHint').hidden=true;await duoMarkResponse('text',message)}await duoRefresh()}catch(err){$('duoInfo').textContent='Message non envoyé : '+err.message;toast('Message non envoyé : '+err.message)}};
+$('duoChatForm').onsubmit=async e=>{e.preventDefault();if(!matchRoom)return;const input=$('duoChatText'),message=input.value.trim();if(!message)return;const isReply=!!duoModalKey&&v78CanReply&&!v78HasReply&&!v78Discuss||duoReplyArmed;try{await authenticated('/rest/v1/room_messages','POST',{room_id:matchRoom.id,sender_id:session.user.id,message});input.value='';if(isReply){duoReplyArmed=false;$('duoChatReplyHint').hidden=true;await duoMarkResponse('text',message)}await duoRefresh()}catch(err){$('duoInfo').textContent='Message non envoyé : '+err.message;toast('Message non envoyé : '+err.message)}};
 $('leaveMatch').onclick=async()=>{if(!matchRoom)return;try{await authenticated('/rest/v1/rpc/duo_leave_room','POST',{p_room_id:matchRoom.id});stopDuo();matchRoom=null;$('matchFound').hidden=true;matchStatus.textContent='Partie terminée, chat fermé.'}catch(e){matchStatus.textContent='Erreur : '+e.message}};
 // V5.9 : photos conservées dans le salon jusqu'à sa fermeture, affichage agrandissable.
 function openPhotoViewer(src){$('duoPhotoImage').src=src;$('duoPhotoViewer').hidden=false;}
