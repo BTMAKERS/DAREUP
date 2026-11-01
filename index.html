@@ -198,39 +198,6 @@ function spinPlayer(){
 spinBtn.onclick=spinPlayer;
 $('truthBtn').onclick=()=>pick('truth');$('dareBtn').onclick=()=>pick('dare');$('doneBtn').onclick=()=>next(true);$('skipBtn').onclick=()=>next(false);$('skipTurn').onclick=()=>next(false);$('scoresBtn').onclick=()=>{renderScores();show('scores')};$('backGame').onclick=()=>show('game');$('endGame').onclick=home;$('quitBtn').onclick=()=>{if(confirm('Quitter la partie en cours ?'))home()};if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});}})();
 
-let duoVoiceLast="",voiceRecorder=null,voiceParts=[],voiceStream=null;
-// Messages vocaux : enregistrement local puis envoi à la table protégée duo_voice_messages.
-async function refreshVoiceInbox(){
- if(!matchRoom||!session)return;
- const rows=await authenticated('/rest/v1/duo_voice_messages?select=id,sender_id,audio_data,created_at&room_id=eq.'+matchRoom.id+'&order=created_at.asc&limit=30');
- const signature=(rows||[]).map(x=>x.id).join(',');if(signature===duoVoiceLast)return;duoVoiceLast=signature;
- let box=$('duoVoiceList');if(!box){box=document.createElement('div');box.id='duoVoiceList';$('duoMessages').after(box)}
- box.replaceChildren();for(const r of rows||[]){const item=document.createElement('div');item.style.cssText='padding:9px;margin:6px 0;border-radius:14px;background:'+(r.sender_id===session.user.id?'#52309a':'#30263f');const label=document.createElement('small');label.textContent=(r.sender_id===session.user.id?'Moi':'Partenaire')+' · 🎤 Vocal';const audio=document.createElement('audio');audio.controls=true;audio.preload='none';audio.style.cssText='display:block;max-width:100%;width:280px;margin-top:5px';audio.src=r.audio_data;item.append(label,audio);box.append(item)}
-}
-$('duoVoiceBtn').onclick=async()=>{
- if(voiceRecorder&&voiceRecorder.state==='recording'){voiceRecorder.stop();return}
- if(!matchRoom){$('duoVoiceStatus').textContent='Aucune partie en cours.';return}
- if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){$('duoVoiceStatus').textContent='Enregistrement vocal non pris en charge sur ce navigateur.';return}
- try{
-  voiceStream=await navigator.mediaDevices.getUserMedia({audio:true});voiceParts=[];
-  const mime=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(x=>MediaRecorder.isTypeSupported(x))||'';
-  voiceRecorder=new MediaRecorder(voiceStream,mime?{mimeType:mime,audioBitsPerSecond:24000}:undefined);
-  voiceRecorder.ondataavailable=e=>{if(e.data.size)voiceParts.push(e.data)};
-  voiceRecorder.onstop=async()=>{
-   voiceStream?.getTracks().forEach(t=>t.stop());$('duoVoiceBtn').textContent='🎤';
-   const blob=new Blob(voiceParts,{type:voiceRecorder.mimeType||'audio/webm'});
-   if(!blob.size){$('duoVoiceStatus').textContent='Enregistrement vide. Vérifie le micro.';return}
-   if(blob.size>240000){$('duoVoiceStatus').textContent='Vocal trop volumineux. Réessaie plus court.';return}
-   $('duoVoiceStatus').textContent='Envoi du vocal…';
-   try{const data=await new Promise((ok,fail)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=fail;r.readAsDataURL(blob)});
-    await authenticated('/rest/v1/duo_voice_messages','POST',{room_id:matchRoom.id,sender_id:session.user.id,audio_data:data});
-    $('duoVoiceStatus').textContent='🎤 Vocal envoyé !';await duoMarkResponse('voice','🎤 Message vocal');await refreshVoiceInbox();
-   }catch(e){$('duoVoiceStatus').textContent='Vocal non envoyé : '+e.message+' (vérifie la table et les droits duo_voice_messages)'}
-  };
-  voiceRecorder.start();$('duoVoiceBtn').textContent='⏹️';$('duoVoiceStatus').textContent='🎙️ Enregistrement… touche ⏹️ pour envoyer (20 s maximum).';
-  const recorder=voiceRecorder;setTimeout(()=>{if(recorder.state==='recording')recorder.stop()},20000);
- }catch(e){$('duoVoiceStatus').textContent='Micro inaccessible : '+e.message}
-};
 </script><script>(()=>{
 'use strict';
 const URL='https://ninutrrrcwwnsclapaxq.supabase.co';
@@ -508,6 +475,40 @@ async function cameraToData(file){
 $('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);await authenticated('/rest/v1/rpc/dareup_v59_send_photo','POST',{p_room_id:matchRoom.id,p_image_data:data});await duoMarkResponse('photo','📸 Photo envoyée');$('duoPhotoStatus').textContent='📸 Photo conservée jusqu’à la fermeture du salon.';await duoRefresh()}catch(err){$('duoPhotoStatus').textContent='Erreur photo : '+err.message}};
 $('logoutBtn').onclick=async()=>{stopPrivateWait();stopDuo();stopPolling();try{await authenticated('/auth/v1/logout','POST')}catch{}session=null;save();updateUI()};
 try{session=JSON.parse(localStorage.getItem(storage)||'null')}catch{session=null}setMode('login');
+let duoVoiceLast="",voiceRecorder=null,voiceParts=[],voiceStream=null;
+// Messages vocaux : enregistrement local puis envoi à la table protégée duo_voice_messages.
+async function refreshVoiceInbox(){
+ if(!matchRoom||!session)return;
+ const rows=await authenticated('/rest/v1/duo_voice_messages?select=id,sender_id,audio_data,created_at&room_id=eq.'+matchRoom.id+'&order=created_at.asc&limit=30');
+ const signature=(rows||[]).map(x=>x.id).join(',');if(signature===duoVoiceLast)return;duoVoiceLast=signature;
+ let box=$('duoVoiceList');if(!box){box=document.createElement('div');box.id='duoVoiceList';$('duoMessages').after(box)}
+ box.replaceChildren();for(const r of rows||[]){const item=document.createElement('div');item.style.cssText='padding:9px;margin:6px 0;border-radius:14px;background:'+(r.sender_id===session.user.id?'#52309a':'#30263f');const label=document.createElement('small');label.textContent=(r.sender_id===session.user.id?'Moi':'Partenaire')+' · 🎤 Vocal';const audio=document.createElement('audio');audio.controls=true;audio.preload='none';audio.style.cssText='display:block;max-width:100%;width:280px;margin-top:5px';audio.src=r.audio_data;item.append(label,audio);box.append(item)}
+}
+$('duoVoiceBtn').onclick=async()=>{
+ if(voiceRecorder&&voiceRecorder.state==='recording'){voiceRecorder.stop();return}
+ if(!matchRoom){$('duoVoiceStatus').textContent='Aucune partie en cours.';return}
+ if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){$('duoVoiceStatus').textContent='Enregistrement vocal non pris en charge sur ce navigateur.';return}
+ try{
+  voiceStream=await navigator.mediaDevices.getUserMedia({audio:true});voiceParts=[];
+  const mime=['audio/webm;codecs=opus','audio/mp4','audio/webm'].find(x=>MediaRecorder.isTypeSupported(x))||'';
+  voiceRecorder=new MediaRecorder(voiceStream,mime?{mimeType:mime,audioBitsPerSecond:24000}:undefined);
+  voiceRecorder.ondataavailable=e=>{if(e.data.size)voiceParts.push(e.data)};
+  voiceRecorder.onstop=async()=>{
+   voiceStream?.getTracks().forEach(t=>t.stop());$('duoVoiceBtn').textContent='🎤';
+   const blob=new Blob(voiceParts,{type:voiceRecorder.mimeType||'audio/webm'});
+   if(!blob.size){$('duoVoiceStatus').textContent='Enregistrement vide. Vérifie le micro.';return}
+   if(blob.size>240000){$('duoVoiceStatus').textContent='Vocal trop volumineux. Réessaie plus court.';return}
+   $('duoVoiceStatus').textContent='Envoi du vocal…';
+   try{const data=await new Promise((ok,fail)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=fail;r.readAsDataURL(blob)});
+    await authenticated('/rest/v1/duo_voice_messages','POST',{room_id:matchRoom.id,sender_id:session.user.id,audio_data:data});
+    $('duoVoiceStatus').textContent='🎤 Vocal envoyé !';await duoMarkResponse('voice','🎤 Message vocal');await refreshVoiceInbox();
+   }catch(e){$('duoVoiceStatus').textContent='Vocal non envoyé : '+e.message+' (vérifie la table et les droits duo_voice_messages)'}
+  };
+  voiceRecorder.start();$('duoVoiceBtn').textContent='⏹️';$('duoVoiceStatus').textContent='🎙️ Enregistrement… touche ⏹️ pour envoyer (20 s maximum).';
+  const recorder=voiceRecorder;setTimeout(()=>{if(recorder.state==='recording')recorder.stop()},20000);
+ }catch(e){$('duoVoiceStatus').textContent='Micro inaccessible : '+e.message}
+};
+
 })();</script><script id="v52-home-nav">(()=>{
 const $=id=>document.getElementById(id);
 let chosen='profile';
