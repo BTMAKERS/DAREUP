@@ -256,7 +256,7 @@ body.duoChatOpen{background:#190b2b!important}
 #duoChatForm{position:relative!important;bottom:auto!important}
 @media(max-width:500px){#duoModalCard{font-size:17px!important}#duoCardModal .modalBox{padding:10px 11px!important}}
 </style>
-</head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
+<style id="v712-fix">#duoRetrySubmit:not([hidden]){display:block!important;cursor:pointer}#duoModalDone:not([hidden]){display:block!important}#duoAnswerState{white-space:normal!important}</style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
 <div class="homeModeGrid">
 <button class="homeModeCard" id="homeLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Joue sur le même téléphone, sans connexion ni compte · 2 à 15 joueurs</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homePrivate" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>DUO PRIVÉ</strong><small>Invite ton partenaire avec un code et joue à deux en ligne</small></span><span class="homeModeArrow">›</span></button>
@@ -276,7 +276,7 @@ body.duoChatOpen{background:#190b2b!important}
 <div id="duoMiniCard" hidden style="display:none!important"><button id="duoShowCard" type="button" hidden>Revoir la carte</button></div>
 <div id="duoCardModal" hidden aria-label="Carte Action ou Vérité"><div class="modalBox"><div id="duoModalTurn">🎯 Tour de jeu</div><div id="duoModalCard">Carte</div><div id="duoAnswerState" aria-live="polite">Choisis comment répondre.</div>
 <div class="modalActions" id="duoAnswerActions"><button class="secondary" id="duoModalText" type="button">✍️ Message</button><button class="secondary" id="duoModalPhoto" type="button">📸 Photo</button></div>
-<div class="modalActions"><button class="primary" id="duoModalDone" type="button">✅ Valider la réponse reçue</button><button class="outline" id="duoModalSkip" type="button">🚫 Je ne souhaite pas répondre</button></div>
+<button id="duoRetrySubmit" type="button" hidden style="background:#a74e22;color:white;width:100%;margin-top:8px">🔄 Réessayer l’enregistrement de la réponse</button><div class="modalActions"><button class="primary" id="duoModalDone" type="button">✅ Valider la réponse reçue</button><button class="outline" id="duoModalSkip" type="button">🚫 Je ne souhaite pas répondre</button></div>
 <button class="outline full" id="duoHideCard" type="button">💬 Mettre la carte en attente pour discuter</button><p class="authHint">Le partenaire voit la réponse avant de la valider. Refuser rapporte 0 point.</p></div></div>
 <div id="duoChatDivider">MESSAGES</div><div aria-live="polite" id="duoMessages" style="height:320px;overflow-y:auto;background:#130f1d;border-radius:20px;padding:14px;text-align:left;border:1px solid #4c385e"></div>
 <button id="v78Discuss" type="button" hidden>💬 Discuter</button><div id="duoChatReplyHint" hidden>✍️ Ton prochain message sera envoyé comme réponse à la carte. <button type="button" id="duoCancelReply">Annuler</button></div><form class="row" id="duoChatForm" style="gap:6px;margin-top:10px"><input autocomplete="off" id="duoChatText" maxlength="1000" placeholder="Écrire un message…" required="" style="min-width:0;flex:1"/><button class="secondary" id="duoChatPhoto" type="button" aria-label="Envoyer une photo">📷</button><button class="secondary" type="submit">➤</button></form>
@@ -488,6 +488,8 @@ function showDuoCard(){if(!duoModalKey)return;$('duoCardModal').hidden=false;duo
 
 let duoResponseKey='',duoLastResponseId='',duoReplyArmed=false;
 let v78CanReply=false,v78Discuss=false,v78LastCardKey='',v78HasReply=false;
+let dareupPendingSubmission=null;
+function dareupResponseError(message){const el=$('duoAnswerState');el.textContent='⚠️ '+message;el.style.color='#ffdf89';toast(message)}
 function armDuoText(){duoReplyArmed=true;$('duoChatReplyHint').hidden=false;$('duoChatText').placeholder='Ta réponse à la carte…';$('duoChatText').focus();}
 $('duoCancelReply').onclick=()=>{duoReplyArmed=false;v78Discuss=true;$('duoChatReplyHint').hidden=true;$('duoChatText').placeholder='💬 Discuter librement…';v78UpdateComposer()};
 $('v78Discuss').onclick=()=>{v78Discuss=!v78Discuss;duoReplyArmed=false;$('duoChatReplyHint').hidden=true;v78UpdateComposer();$('duoChatText').focus()};
@@ -507,22 +509,40 @@ function v78EnsureCard(){
  if(card.parentElement!==messages)messages.append(card);
 }
 function duoPlayerName(id){if(!matchRoom)return 'ton partenaire';if(id===session?.user?.id)return 'toi';return (document.getElementById('matchPartner')?.textContent||'ton partenaire').replace(/^.*?:\s*/, '').trim()||'ton partenaire'}
-async function duoMarkResponse(kind,caption){if(!matchRoom||!duoModalKey)return;try{await authenticated('/rest/v1/rpc/dareup_v53_submit','POST',{p_room_id:matchRoom.id,p_kind:kind,p_caption:caption});await duoRefresh()}catch(e){$('duoInfo').textContent='Réponse envoyée dans le chat, mais non soumise à validation : '+e.message}}
+async function duoMarkResponse(kind,caption){
+ if(!matchRoom||!duoModalKey){dareupResponseError('Aucune carte active : réponse non validable.');return false;}
+ try{
+  await authenticated('/rest/v1/rpc/dareup_v53_submit','POST',{p_room_id:matchRoom.id,p_kind:kind,p_caption:caption});
+  dareupPendingSubmission=null;v78HasReply=true;v78UpdateComposer();
+  $('duoAnswerState').textContent='📨 Réponse envoyée. Ton partenaire doit maintenant la valider.';
+  await duoRefresh();return true;
+ }catch(e){
+  dareupPendingSubmission={roomId:matchRoom.id,key:duoModalKey,kind,caption};
+  dareupResponseError('Réponse non enregistrée pour validation : '+e.message+'. Appuie sur Réessayer.');
+  $('duoRetrySubmit').hidden=false;return false;
+ }
+}
+async function dareupRetrySubmission(){
+ const p=dareupPendingSubmission;if(!p||!matchRoom||p.roomId!==matchRoom.id||p.key!==duoModalKey)return;
+ $('duoRetrySubmit').disabled=true;try{const ok=await duoMarkResponse(p.kind,p.caption);if(ok)$('duoRetrySubmit').hidden=true;}finally{$('duoRetrySubmit').disabled=false}
+}
+$('duoRetrySubmit').onclick=dareupRetrySubmission;
 $('duoReviewConfirm').onclick=()=>duoReviewAnswer();
-async function duoReviewAnswer(){if(!matchRoom)return;try{await authenticated('/rest/v1/rpc/dareup_v53_validate','POST',{p_room_id:matchRoom.id});await duoRefresh()}catch(e){$('duoAnswerState').textContent='❌ Validation impossible : '+e.message}}
+async function duoReviewAnswer(){if(!matchRoom)return;try{await authenticated('/rest/v1/rpc/dareup_v53_validate','POST',{p_room_id:matchRoom.id});await duoRefresh()}catch(e){dareupResponseError('Validation impossible : '+e.message)}}
 async function duoRefuseAnswer(){if(!matchRoom)return;try{await authenticated('/rest/v1/rpc/dareup_v53_refuse','POST',{p_room_id:matchRoom.id});await duoRefresh()}catch(e){$('duoInfo').textContent='Refus impossible : '+e.message}}
 async function duoRefreshResponse(key,actor){
  const status=$('duoAnswerState'),done=$('duoModalDone'),skip=$('duoModalSkip'),actions=$('duoAnswerActions'),media=$('duoResponseMedia');
- if(!key){v78HasReply=false;v78UpdateComposer();status.textContent='';done.hidden=true;skip.hidden=true;$('duoReviewBar').hidden=true;media.replaceChildren();return}
+ if(!key){$('duoRetrySubmit').hidden=true;v78HasReply=false;v78UpdateComposer();status.textContent='';done.hidden=true;skip.hidden=true;$('duoReviewBar').hidden=true;media.replaceChildren();return}
  const currentTurn=Number(key.split(':')[2]);const rows=await authenticated('/rest/v1/duo_turn_responses?select=id,turn_number,kind,caption,status,sender_id,created_at&room_id=eq.'+matchRoom.id+'&turn_number=eq.'+(currentTurn-1)+'&limit=1');
  const row=rows?.[0];
+ if(row){dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;}
  const mine=actor===session.user.id;v78HasReply=!!row;v78UpdateComposer();actions.hidden=!mine||!!row;skip.hidden=!mine||!!row;
  done.hidden=mine||!row||row.status!=='submitted';done.disabled=done.hidden;$('duoReviewBar').hidden=done.hidden;$('duoReviewCaption').textContent=row?.kind==='photo'?'📸 Photo reçue : regarde-la dans le chat puis valide.':row?.caption||'';done.textContent='✅ Valider la réponse de '+duoPlayerName(actor);
  status.textContent=row?(row.status==='submitted'?(mine?'📨 Réponse envoyée. En attente de validation par ton partenaire.':'📨 Réponse reçue ! Vérifie-la dans la conversation, puis valide.'):'Réponse traitée.'):(mine?'✍️ Réponds par message ou photo. Tu peux refuser.':'⏳ Ton partenaire prépare sa réponse.');
  if(row?.kind==='photo'&&row.id!==duoLastResponseId){duoLastResponseId=row.id;media.replaceChildren();const photos=await authenticated('/rest/v1/duo_turn_photos?select=image_data&response_id=eq.'+row.id+'&limit=1');if(photos?.[0]){const img=document.createElement('img');img.src=photos[0].image_data;img.alt='Photo de réponse';img.className='duoAnswerPhoto';media.append(img)}}
  else if(!row||row.kind!=='photo'){media.replaceChildren();duoLastResponseId=''}
 }
-function stopDuo(){v78LastCardKey='';v78CanReply=false;v78Discuss=false;document.body.classList.remove('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoCardModal').hidden=true;$('duoMiniCard').hidden=true;duoModalKey='';duoDismissedKey='';photoReset();if(duoTimer){clearInterval(duoTimer);duoTimer=null} $('duoPanel').hidden=true;duoLastMsg='';duoLastPhotoKey=''}
+function stopDuo(){dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;v78LastCardKey='';v78CanReply=false;v78Discuss=false;document.body.classList.remove('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoCardModal').hidden=true;$('duoMiniCard').hidden=true;duoModalKey='';duoDismissedKey='';photoReset();if(duoTimer){clearInterval(duoTimer);duoTimer=null} $('duoPanel').hidden=true;duoLastMsg='';duoLastPhotoKey=''}
 function openDuo(){if(!matchRoom)return;v78EnsureCard();$('duoPanel').hidden=false;document.body.classList.add('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoChatPartner').textContent=duoPlayerName(matchRoom.player1_id===session.user.id?matchRoom.player2_id:matchRoom.player1_id);duoRefresh();if(!duoTimer)duoTimer=setInterval(duoRefresh,2200)}
 async function duoRefresh(){
  if(duoBusy||!matchRoom||!session)return;duoBusy=true;
@@ -547,7 +567,7 @@ async function duoRefresh(){
  const pendingCard=state&&!!state.card_text&&state.completed_turn<state.turn_number-1;
  const lastActorId=state&&pendingCard?((state.turn_number-1)%2===1?matchRoom.player1_id:matchRoom.player2_id):null;
  const key=state&&!finished&&pendingCard?room+':'+state.round_number+':'+state.turn_number+':'+state.card_type+':'+state.card_text:'';
- if(key!==duoModalKey){duoModalKey=key;duoDismissedKey='';duoReplyArmed=false;v78Discuss=false;v78HasReply=false;$('duoChatReplyHint').hidden=true;}
+ if(key!==duoModalKey){dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;duoModalKey=key;duoDismissedKey='';duoReplyArmed=false;v78Discuss=false;v78HasReply=false;$('duoChatReplyHint').hidden=true;}
  v78CanReply=!!key&&lastActorId===session.user.id;v78UpdateComposer();
  $('duoMiniCard').hidden=!key; $('duoReopenCard').hidden=!key;
  $('duoModalTurn').textContent=key?(lastActorId===session.user.id?'🎯 À TOI DE RÉPONDRE':'⏳ TON PARTENAIRE RÉPOND'):'🎲 Choisissez Action ou Vérité';
