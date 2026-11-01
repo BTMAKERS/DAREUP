@@ -548,7 +548,22 @@ function duoPlayerName(id){if(!matchRoom)return 'ton partenaire';if(id===session
 async function duoMarkResponse(kind,caption){
  if(!matchRoom||!duoModalKey){dareupResponseError('Aucune carte active : réponse non validable.');return false;}
  try{
-  await authenticated('/rest/v1/rpc/dareup_v53_submit','POST',{p_room_id:matchRoom.id,p_kind:kind,p_caption:caption});
+  // Photo messages are stored by dareup_v59_send_photo. Some existing V5.3
+  // response RPCs accept text only; preserve the photo as evidence in chat
+  // and register its caption as a validatable response when photo kind is rejected.
+  let registeredKind=kind;
+  try{
+   await authenticated('/rest/v1/rpc/dareup_v53_submit','POST',{p_room_id:matchRoom.id,p_kind:kind,p_caption:caption});
+  }catch(submitError){
+   if(kind!=='photo')throw submitError;
+   try{
+    await authenticated('/rest/v1/rpc/dareup_v53_submit','POST',{p_room_id:matchRoom.id,p_kind:'text',p_caption:'📸 Photo envoyée dans la conversation'});
+    registeredKind='text';
+   }catch(fallbackError){
+    throw Error('Photo envoyée, mais validation non enregistrée. Essai photo : '+submitError.message+' ; essai compatible : '+fallbackError.message);
+   }
+  }
+  $('duoRetrySubmit').hidden=true;
   dareupPendingSubmission=null;v78HasReply=true;v78UpdateComposer();
   $('duoAnswerState').textContent='📨 Réponse envoyée. Ton partenaire doit maintenant la valider.';
   await duoRefresh();return true;
@@ -709,7 +724,7 @@ async function cameraToData(file){
  for(const q of [.7,.55,.4,.28]){const data=canvas.toDataURL('image/jpeg',q);if(data.length<=230000)return data;}
  throw Error('Impossible de compresser la photo.');
 }
-$('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);await authenticated('/rest/v1/rpc/dareup_v59_send_photo','POST',{p_room_id:matchRoom.id,p_image_data:data});await duoMarkResponse('photo','📸 Photo envoyée');$('duoPhotoStatus').textContent='📸 Photo conservée jusqu’à la fermeture du salon.';await duoRefresh()}catch(err){$('duoPhotoStatus').textContent='Erreur photo : '+err.message}};
+$('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);await authenticated('/rest/v1/rpc/dareup_v59_send_photo','POST',{p_room_id:matchRoom.id,p_image_data:data});const registered=await duoMarkResponse('photo','📸 Photo envoyée');$('duoPhotoStatus').textContent=registered?'📸 Photo envoyée. Le partenaire peut la valider.':'⚠️ Photo envoyée, mais réponse non enregistrée. Consulte le message d’erreur sur la carte.';await duoRefresh()}catch(err){$('duoPhotoStatus').textContent='Erreur photo : '+err.message}};
 $('logoutBtn').onclick=async()=>{stopPrivateWait();stopDuo();stopPolling();try{await authenticated('/auth/v1/logout','POST')}catch{}session=null;save();updateUI()};
 try{session=JSON.parse(localStorage.getItem(storage)||'null')}catch{session=null}setMode('login');
 async function dareupRestoreDuo(){
