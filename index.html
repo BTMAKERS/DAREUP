@@ -274,6 +274,10 @@ body.duoChatOpen{background:#190b2b!important}
 #duoMessages #duoCardModal:not([hidden]){display:block!important;visibility:visible!important;opacity:1!important;position:relative!important;flex-shrink:0!important}
 #duoMessages #duoReviewBar:not([hidden]){display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;flex-shrink:0!important}
 #duoMessages #duoReviewConfirm:not([disabled]){display:block!important;visibility:visible!important}
+</style><style id="v717-review-correction">
+#duoMessages #duoReviewBar:not([hidden]){display:flex!important;flex-direction:column!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+#duoMessages #duoReviewBar:not([hidden]) #duoReviewConfirm:not([disabled]){display:block!important;visibility:visible!important;pointer-events:auto!important}
+#duoMessages #duoCardModal:not([hidden]){display:block!important}
 </style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
 <div class="homeModeGrid">
 <button class="homeModeCard" id="homeLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Joue sur le même téléphone, sans connexion ni compte · 2 à 15 joueurs</small></span><span class="homeModeArrow">›</span></button>
@@ -606,7 +610,7 @@ async function duoRefresh(){
  $('duoModalCard').textContent=key?(state.card_type==='truth'?'💬 VÉRITÉ\n':'⚡ ACTION\n')+state.card_text:'';
  $('duoModalCard').style.whiteSpace='pre-line';
  $('duoCardModal').hidden=!key;v78EnsureCard();
- $('duoModalDone').disabled=true;
+ // V7.17: validation button state is owned by duoRefreshResponse(), never reset here.
  $('duoModalSkip').disabled=!(key&&lastActorId===session.user.id);
  $('duoTruth').disabled=!myTurn||finished;$('duoDare').disabled=!myTurn||finished;
  if(state){
