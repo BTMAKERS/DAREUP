@@ -80,7 +80,7 @@ async function startPremiumCheckout(){
   });
   const result=await response.json().catch(()=>({}));
   if(!response.ok||!result.url)throw Error(result.error||result.message||'Impossible de créer le paiement.');
-  const target=new URL(result.url);
+  const target=new globalThis.URL(result.url);
   if(target.protocol!=='https:'||!(target.hostname==='checkout.stripe.com'||target.hostname.endsWith('.stripe.com')))throw Error('Adresse de paiement non reconnue.');
   window.location.assign(target.href);
  }catch(err){label.textContent='❌ '+err.message;btn.disabled=false;}
