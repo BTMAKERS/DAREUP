@@ -270,7 +270,11 @@ body.duoChatOpen{background:#190b2b!important}
  border:0!important;border-radius:11px!important;padding:13px!important;font-weight:800!important;cursor:pointer!important}
 #duoReviewConfirm[disabled]{opacity:.6!important}
 #duoMessages #duoCardModal:not([hidden]){flex:none!important}
-</style><style id="v715-pending-response">#duoMessages #duoReviewBar:not([hidden]){display:flex!important;flex-direction:column!important;gap:8px!important;visibility:visible!important;position:relative!important;min-height:85px!important;flex-shrink:0!important}#duoMessages #duoReviewBar[hidden]{display:none!important}#duoMessages #duoReviewConfirm:not([disabled]){display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}</style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
+</style><style id="v715-pending-response">#duoMessages #duoReviewBar:not([hidden]){display:flex!important;flex-direction:column!important;gap:8px!important;visibility:visible!important;position:relative!important;min-height:85px!important;flex-shrink:0!important}#duoMessages #duoReviewBar[hidden]{display:none!important}#duoMessages #duoReviewConfirm:not([disabled]){display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}</style><style id="v716-duo-stability">
+#duoMessages #duoCardModal:not([hidden]){display:block!important;visibility:visible!important;opacity:1!important;position:relative!important;flex-shrink:0!important}
+#duoMessages #duoReviewBar:not([hidden]){display:flex!important;visibility:visible!important;opacity:1!important;position:relative!important;flex-shrink:0!important}
+#duoMessages #duoReviewConfirm:not([disabled]){display:block!important;visibility:visible!important}
+</style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
 <div class="homeModeGrid">
 <button class="homeModeCard" id="homeLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Joue sur le même téléphone, sans connexion ni compte · 2 à 15 joueurs</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homePrivate" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>DUO PRIVÉ</strong><small>Invite ton partenaire avec un code et joue à deux en ligne</small></span><span class="homeModeArrow">›</span></button>
@@ -548,8 +552,14 @@ async function duoRefuseAnswer(){if(!matchRoom)return;try{await authenticated('/
 async function duoRefreshResponse(key,actor){
  const status=$('duoAnswerState'),done=$('duoModalDone'),skip=$('duoModalSkip'),actions=$('duoAnswerActions'),media=$('duoResponseMedia');
  if(!key){$('duoRetrySubmit').hidden=true;v78HasReply=false;v78UpdateComposer();status.textContent='';done.hidden=true;skip.hidden=true;$('duoReviewBar').hidden=true;media.replaceChildren();return}
- const currentTurn=Number(key.split(':')[2]);const rows=await authenticated('/rest/v1/rpc/dareup_v715_pending_response','POST',{p_room_id:matchRoom.id});
- const row=rows?.find(r=>Number(r.turn_number)===currentTurn-1);
+ const currentTurn=Number(key.split(':')[2]);
+ let rows;
+ try{rows=await authenticated('/rest/v1/rpc/dareup_v715_pending_response','POST',{p_room_id:matchRoom.id})}
+ catch(rpcError){
+   try{rows=await authenticated('/rest/v1/duo_turn_responses?select=id,turn_number,kind,caption,status,sender_id,created_at&room_id=eq.'+matchRoom.id+'&turn_number=eq.'+(currentTurn-1)+'&order=created_at.desc&limit=1')}
+   catch(readError){throw Error('Lecture des réponses : '+rpcError.message+' / '+readError.message)}
+ }
+ const row=Array.isArray(rows)?rows.find(r=>Number(r.turn_number)===currentTurn-1):null;
  if(row){dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;}
  if(dareupPendingSubmission&&dareupPendingSubmission.key===key&&!row){$('duoRetrySubmit').hidden=false;}
  const mine=actor===session.user.id;v78HasReply=!!row;v78UpdateComposer();actions.hidden=!mine||!!row;skip.hidden=!mine||!!row;
@@ -558,18 +568,24 @@ async function duoRefreshResponse(key,actor){
  if(row?.kind==='photo'&&row.id!==duoLastResponseId){duoLastResponseId=row.id;media.replaceChildren();const photos=await authenticated('/rest/v1/duo_turn_photos?select=image_data&response_id=eq.'+row.id+'&limit=1');if(photos?.[0]){const img=document.createElement('img');img.src=photos[0].image_data;img.alt='Photo de réponse';img.className='duoAnswerPhoto';media.append(img)}}
  else if(!row||row.kind!=='photo'){media.replaceChildren();duoLastResponseId=''}
 }
-function stopDuo(){dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;v78LastCardKey='';v78CanReply=false;v78Discuss=false;document.body.classList.remove('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoCardModal').hidden=true;$('duoMiniCard').hidden=true;duoModalKey='';duoDismissedKey='';photoReset();if(duoTimer){clearInterval(duoTimer);duoTimer=null} $('duoPanel').hidden=true;duoLastMsg='';duoLastPhotoKey=''}
-function openDuo(){if(!matchRoom)return;v78EnsureCard();$('duoPanel').hidden=false;document.body.classList.add('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoChatPartner').textContent=duoPlayerName(matchRoom.player1_id===session.user.id?matchRoom.player2_id:matchRoom.player1_id);duoRefresh();if(!duoTimer)duoTimer=setInterval(duoRefresh,2200)}
+function stopDuo(){try{sessionStorage.removeItem('dareup_active_duo')}catch{}dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;v78LastCardKey='';v78CanReply=false;v78Discuss=false;document.body.classList.remove('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoCardModal').hidden=true;$('duoMiniCard').hidden=true;duoModalKey='';duoDismissedKey='';photoReset();if(duoTimer){clearInterval(duoTimer);duoTimer=null} $('duoPanel').hidden=true;duoLastMsg='';duoLastPhotoKey=''}
+function openDuo(){if(!matchRoom)return;try{sessionStorage.setItem('dareup_active_duo',JSON.stringify({user_id:session.user.id,room:matchRoom}))}catch{}v78EnsureCard();$('duoPanel').hidden=false;document.body.classList.add('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoChatPartner').textContent=duoPlayerName(matchRoom.player1_id===session.user.id?matchRoom.player2_id:matchRoom.player1_id);duoRefresh();if(!duoTimer)duoTimer=setInterval(duoRefresh,2200)}
 async function duoRefresh(){
  if(duoBusy||!matchRoom||!session)return;duoBusy=true;
  try{
  const room=matchRoom.id;
- const [states,messages,rooms]=await Promise.all([
+ const [stateResult,messageResult,roomResult]=await Promise.allSettled([
  authenticated('/rest/v1/room_game_state?select=turn_number,card_type,card_text,score1,score2,completed_turn,replay1,replay2,round_number,winner_id&room_id=eq.'+room),
  authenticated('/rest/v1/room_messages?select=id,sender_id,message,created_at&room_id=eq.'+room+'&order=created_at.asc&limit=100'),
  authenticated('/rest/v1/game_rooms?select=id,status,expires_at&id=eq.'+room)
  ]);
- if(!rooms.length||rooms[0].status!=='playing'||new Date(rooms[0].expires_at)<=new Date()){
+ if(stateResult.status!=='fulfilled')throw Error('État de la partie inaccessible : '+stateResult.reason.message);
+ const states=stateResult.value;
+ const messages=messageResult.status==='fulfilled'?messageResult.value:null;
+ const rooms=roomResult.status==='fulfilled'?roomResult.value:null;
+ if(messageResult.status==='rejected')$('duoInfo').textContent='⚠️ Messages indisponibles : '+messageResult.reason.message;
+ if(roomResult.status==='rejected')$('duoInfo').textContent='⚠️ Salon inaccessible : '+roomResult.reason.message;
+ if(rooms&&(!rooms.length||rooms[0].status!=='playing'||new Date(rooms[0].expires_at)<=new Date())){
  stopDuo();matchRoom=null;$('matchFound').hidden=true;matchStatus.textContent='Partie terminée : le chat est fermé.';return;
  }
  const state=states[0],current=state?((state.turn_number%2===1)?matchRoom.player1_id:matchRoom.player2_id):matchRoom.player1_id;
@@ -621,11 +637,13 @@ async function duoRefresh(){
  
 
  try{await duoRefreshResponse(key,lastActorId)}catch(err){$('duoAnswerState').textContent='⚠️ Impossible de vérifier la réponse : '+err.message;$('duoInfo').textContent='⚠️ Erreur de validation : '+err.message;}
- const last=messages.length?messages[messages.length-1].id:'';
- const photos=await authenticated('/rest/v1/rpc/dareup_v59_list_photos','POST',{p_room_id:room});
- const photoKey=(photos||[]).map(p=>p.id).join(',');
- if(last!==duoLastMsg||photoKey!==duoLastPhotoKey){duoLastMsg=last;duoLastPhotoKey=photoKey;const box=$('duoMessages');const liveCard=$('duoCardModal');const liveReview=$('duoReviewBar');if(liveCard.parentElement===box)liveCard.remove();if(liveReview.parentElement===box)liveReview.remove();box.replaceChildren();const entries=[...messages.map(m=>({...m,entryType:'text'})),...(photos||[]).map(p=>({...p,entryType:'photo'}))].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));for(const m of entries){const line=document.createElement('div');line.className='duoBubble '+(m.sender_id===session.user.id?'duoMine':'duoOther')+(m.entryType==='photo'?' duoPhotoBubble':'');const label=document.createElement('b');label.textContent=m.sender_id===session.user.id?'Moi':'Partenaire';label.className='duoBubbleName';line.append(label);if(m.entryType==='photo'){const img=document.createElement('img');img.src=m.image_data;img.alt='Photo envoyée — toucher pour agrandir';img.className='duoChatImage';img.loading='lazy';img.onclick=()=>openPhotoViewer(m.image_data);line.append(img)}else{line.append(document.createTextNode(m.message))}const stamp=document.createElement('time');stamp.className='duoBubbleTime';stamp.textContent=new Date(m.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});line.append(stamp);box.append(line)}v78EnsureCard();$('duoCardModal').hidden=!key;box.scrollTop=box.scrollHeight;}
- if(key!==v78LastCardKey){v78LastCardKey=key;v78EnsureCard();$('duoMessages').scrollTop=$('duoMessages').scrollHeight;}
+ const last=messages?.length?messages[messages.length-1].id:'';
+ let photos=[];
+ try{photos=await authenticated('/rest/v1/rpc/dareup_v59_list_photos','POST',{p_room_id:room})||[]}
+ catch(e){$('duoInfo').textContent='⚠️ Photos indisponibles : '+e.message}
+ const photoKey=photos.map(p=>p.id).join(',');
+ if(messages&&(last!==duoLastMsg||photoKey!==duoLastPhotoKey)){duoLastMsg=last;duoLastPhotoKey=photoKey;const box=$('duoMessages');const liveCard=$('duoCardModal');const liveReview=$('duoReviewBar');if(liveCard.parentElement===box)liveCard.remove();if(liveReview.parentElement===box)liveReview.remove();box.replaceChildren();const entries=[...messages.map(m=>({...m,entryType:'text'})),...(photos||[]).map(p=>({...p,entryType:'photo'}))].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));for(const m of entries){const line=document.createElement('div');line.className='duoBubble '+(m.sender_id===session.user.id?'duoMine':'duoOther')+(m.entryType==='photo'?' duoPhotoBubble':'');const label=document.createElement('b');label.textContent=m.sender_id===session.user.id?'Moi':'Partenaire';label.className='duoBubbleName';line.append(label);if(m.entryType==='photo'){const img=document.createElement('img');img.src=m.image_data;img.alt='Photo envoyée — toucher pour agrandir';img.className='duoChatImage';img.loading='lazy';img.onclick=()=>openPhotoViewer(m.image_data);line.append(img)}else{line.append(document.createTextNode(m.message))}const stamp=document.createElement('time');stamp.className='duoBubbleTime';stamp.textContent=new Date(m.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});line.append(stamp);box.append(line)}v78EnsureCard();$('duoCardModal').hidden=!key;box.scrollTop=box.scrollHeight;}
+ if(key!==v78LastCardKey){v78LastCardKey=key;v78EnsureCard();$('duoMessages').scrollTop=$('duoMessages').scrollHeight;} if(key){v78EnsureCard();$('duoCardModal').hidden=false;}
  }catch(e){$('duoInfo').textContent='Erreur de synchronisation : '+e.message}
  finally{duoBusy=false}
 }
@@ -674,6 +692,21 @@ async function cameraToData(file){
 $('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);await authenticated('/rest/v1/rpc/dareup_v59_send_photo','POST',{p_room_id:matchRoom.id,p_image_data:data});await duoMarkResponse('photo','📸 Photo envoyée');$('duoPhotoStatus').textContent='📸 Photo conservée jusqu’à la fermeture du salon.';await duoRefresh()}catch(err){$('duoPhotoStatus').textContent='Erreur photo : '+err.message}};
 $('logoutBtn').onclick=async()=>{stopPrivateWait();stopDuo();stopPolling();try{await authenticated('/auth/v1/logout','POST')}catch{}session=null;save();updateUI()};
 try{session=JSON.parse(localStorage.getItem(storage)||'null')}catch{session=null}setMode('login');
+async function dareupRestoreDuo(){
+ if(!session?.user?.id)return;
+ let stored;try{stored=JSON.parse(sessionStorage.getItem('dareup_active_duo')||'null')}catch{return}
+ if(!stored||stored.user_id!==session.user.id||!stored.room?.id)return;
+ try{
+  const rooms=await authenticated('/rest/v1/game_rooms?select=id,player1_id,player2_id,game_mode,status,expires_at&id=eq.'+stored.room.id);
+  const r=rooms?.[0];if(!r||r.status!=='playing'||new Date(r.expires_at)<=new Date()||![r.player1_id,r.player2_id].includes(session.user.id)){sessionStorage.removeItem('dareup_active_duo');return}
+  matchRoom={id:r.id,player1_id:r.player1_id,player2_id:r.player2_id,game_mode:r.game_mode};
+  $('matchFound').hidden=false;
+  $('matchPartner').textContent='❤️ Partie retrouvée • '+r.id.slice(0,8);
+  openDuo();
+ }catch(e){console.warn('Reprise de partie différée :',e.message)}
+}
+if(session?.access_token){setTimeout(dareupRestoreDuo,300)}
+
 
 })();</script><script id="v52-home-nav">(()=>{
 const $=id=>document.getElementById(id);
