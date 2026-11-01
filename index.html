@@ -270,7 +270,7 @@ body.duoChatOpen{background:#190b2b!important}
  border:0!important;border-radius:11px!important;padding:13px!important;font-weight:800!important;cursor:pointer!important}
 #duoReviewConfirm[disabled]{opacity:.6!important}
 #duoMessages #duoCardModal:not([hidden]){flex:none!important}
-</style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
+</style><style id="v715-pending-response">#duoMessages #duoReviewBar:not([hidden]){display:flex!important;flex-direction:column!important;gap:8px!important;visibility:visible!important;position:relative!important;min-height:85px!important;flex-shrink:0!important}#duoMessages #duoReviewBar[hidden]{display:none!important}#duoMessages #duoReviewConfirm:not([disabled]){display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}</style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
 <div class="homeModeGrid">
 <button class="homeModeCard" id="homeLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Joue sur le même téléphone, sans connexion ni compte · 2 à 15 joueurs</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homePrivate" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>DUO PRIVÉ</strong><small>Invite ton partenaire avec un code et joue à deux en ligne</small></span><span class="homeModeArrow">›</span></button>
@@ -548,8 +548,8 @@ async function duoRefuseAnswer(){if(!matchRoom)return;try{await authenticated('/
 async function duoRefreshResponse(key,actor){
  const status=$('duoAnswerState'),done=$('duoModalDone'),skip=$('duoModalSkip'),actions=$('duoAnswerActions'),media=$('duoResponseMedia');
  if(!key){$('duoRetrySubmit').hidden=true;v78HasReply=false;v78UpdateComposer();status.textContent='';done.hidden=true;skip.hidden=true;$('duoReviewBar').hidden=true;media.replaceChildren();return}
- const currentTurn=Number(key.split(':')[2]);const rows=await authenticated('/rest/v1/duo_turn_responses?select=id,turn_number,kind,caption,status,sender_id,created_at&room_id=eq.'+matchRoom.id+'&turn_number=eq.'+(currentTurn-1)+'&limit=1');
- const row=rows?.[0];
+ const currentTurn=Number(key.split(':')[2]);const rows=await authenticated('/rest/v1/rpc/dareup_v715_pending_response','POST',{p_room_id:matchRoom.id});
+ const row=rows?.find(r=>Number(r.turn_number)===currentTurn-1);
  if(row){dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;}
  if(dareupPendingSubmission&&dareupPendingSubmission.key===key&&!row){$('duoRetrySubmit').hidden=false;}
  const mine=actor===session.user.id;v78HasReply=!!row;v78UpdateComposer();actions.hidden=!mine||!!row;skip.hidden=!mine||!!row;
