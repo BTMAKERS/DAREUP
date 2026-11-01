@@ -256,7 +256,21 @@ body.duoChatOpen{background:#190b2b!important}
 #duoChatForm{position:relative!important;bottom:auto!important}
 @media(max-width:500px){#duoModalCard{font-size:17px!important}#duoCardModal .modalBox{padding:10px 11px!important}}
 </style>
-<style id="v712-fix">#duoRetrySubmit:not([hidden]){display:block!important;cursor:pointer}#duoModalDone:not([hidden]){display:block!important}#duoAnswerState{white-space:normal!important}</style><style id="v713-turn-fix">#duoCardModal:not([hidden]){display:block!important;visibility:visible!important}#duoModalDone:not([hidden]){display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}#duoRetrySubmit:not([hidden]){display:block!important}#duoAnswerState{min-height:18px!important}#duoInfo:not(:empty){display:block!important;color:#ffe39b!important;padding:5px 10px!important;font-size:12px!important}#duoReopenCard:not([hidden]){display:inline-flex!important}</style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
+<style id="v712-fix">#duoRetrySubmit:not([hidden]){display:block!important;cursor:pointer}#duoModalDone:not([hidden]){display:block!important}#duoAnswerState{white-space:normal!important}</style><style id="v713-turn-fix">#duoCardModal:not([hidden]){display:block!important;visibility:visible!important}#duoModalDone:not([hidden]){display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}#duoRetrySubmit:not([hidden]){display:block!important}#duoAnswerState{min-height:18px!important}#duoInfo:not(:empty){display:block!important;color:#ffe39b!important;padding:5px 10px!important;font-size:12px!important}#duoReopenCard:not([hidden]){display:inline-flex!important}</style><style id="v714-review-fix">
+/* V7.14: review actions belong to the scrollable chat, never to a hidden sibling. */
+#duoMessages #duoReviewBar:not([hidden]) {
+ display:flex!important;flex-direction:column!important;gap:8px!important;
+ position:relative!important;order:initial!important;visibility:visible!important;
+ background:#402052!important;color:#fff!important;border:1px solid #bc80e6!important;
+ border-radius:15px!important;padding:12px!important;margin:5px 0 12px!important;
+ flex:none!important;opacity:1!important;pointer-events:auto!important;
+}
+#duoMessages #duoReviewBar[hidden]{display:none!important}
+#duoReviewConfirm:not([disabled]){display:block!important;background:#258564!important;color:#fff!important;
+ border:0!important;border-radius:11px!important;padding:13px!important;font-weight:800!important;cursor:pointer!important}
+#duoReviewConfirm[disabled]{opacity:.6!important}
+#duoMessages #duoCardModal:not([hidden]){flex:none!important}
+</style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
 <div class="homeModeGrid">
 <button class="homeModeCard" id="homeLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Joue sur le même téléphone, sans connexion ni compte · 2 à 15 joueurs</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homePrivate" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>DUO PRIVÉ</strong><small>Invite ton partenaire avec un code et joue à deux en ligne</small></span><span class="homeModeArrow">›</span></button>
@@ -505,8 +519,9 @@ function v78UpdateComposer(){
  $('duoChatText').placeholder=replying?'✍️ Répondre à la question…':'Écrire un message…';
 }
 function v78EnsureCard(){
- const messages=$('duoMessages'),card=$('duoCardModal');
+ const messages=$('duoMessages'),card=$('duoCardModal'),review=$('duoReviewBar');
  if(card.parentElement!==messages)messages.append(card);
+ if(review.parentElement!==messages)messages.append(review);
 }
 function duoPlayerName(id){if(!matchRoom)return 'ton partenaire';if(id===session?.user?.id)return 'toi';return (document.getElementById('matchPartner')?.textContent||'ton partenaire').replace(/^.*?:\s*/, '').trim()||'ton partenaire'}
 async function duoMarkResponse(kind,caption){
@@ -528,7 +543,7 @@ async function dareupRetrySubmission(){
 }
 $('duoRetrySubmit').onclick=dareupRetrySubmission;
 $('duoReviewConfirm').onclick=()=>duoReviewAnswer();
-async function duoReviewAnswer(){if(!matchRoom)return;const btn=$('duoModalDone');btn.disabled=true;try{await authenticated('/rest/v1/rpc/dareup_v53_validate','POST',{p_room_id:matchRoom.id});$('duoInfo').textContent='✅ Réponse validée, passage au tour suivant…';await duoRefresh()}catch(e){dareupResponseError('Validation impossible : '+e.message)}finally{btn.disabled=false}}
+async function duoReviewAnswer(){if(!matchRoom)return;const btn=$('duoModalDone');btn.disabled=true;$('duoReviewConfirm').disabled=true;try{await authenticated('/rest/v1/rpc/dareup_v53_validate','POST',{p_room_id:matchRoom.id});$('duoInfo').textContent='✅ Réponse validée, passage au tour suivant…';await duoRefresh()}catch(e){dareupResponseError('Validation impossible : '+e.message)}finally{btn.disabled=false;$('duoReviewConfirm').disabled=false}}
 async function duoRefuseAnswer(){if(!matchRoom)return;try{await authenticated('/rest/v1/rpc/dareup_v53_refuse','POST',{p_room_id:matchRoom.id});await duoRefresh()}catch(e){$('duoInfo').textContent='Refus impossible : '+e.message}}
 async function duoRefreshResponse(key,actor){
  const status=$('duoAnswerState'),done=$('duoModalDone'),skip=$('duoModalSkip'),actions=$('duoAnswerActions'),media=$('duoResponseMedia');
@@ -538,7 +553,7 @@ async function duoRefreshResponse(key,actor){
  if(row){dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;}
  if(dareupPendingSubmission&&dareupPendingSubmission.key===key&&!row){$('duoRetrySubmit').hidden=false;}
  const mine=actor===session.user.id;v78HasReply=!!row;v78UpdateComposer();actions.hidden=!mine||!!row;skip.hidden=!mine||!!row;
- done.hidden=mine||!row||row.status!=='submitted';done.disabled=done.hidden;$('duoReviewBar').hidden=done.hidden;$('duoReviewCaption').textContent=row?.kind==='photo'?'📸 Photo reçue : regarde-la dans le chat puis valide.':row?.caption||'';done.textContent='✅ Valider la réponse de '+duoPlayerName(actor);
+ done.hidden=mine||!row||row.status!=='submitted';done.disabled=done.hidden;$('duoReviewBar').hidden=done.hidden;$('duoReviewConfirm').disabled=done.hidden;$('duoReviewCaption').textContent=row?.kind==='photo'?'📸 Photo reçue : regarde-la dans le chat puis valide.':row?.caption||'';done.textContent='✅ Valider la réponse de '+duoPlayerName(actor);
  status.textContent=row?(row.status==='submitted'?(mine?'📨 Réponse envoyée. En attente de validation par ton partenaire.':'📨 Réponse reçue ! Vérifie-la dans la conversation, puis valide.'):'Réponse traitée.'):(dareupPendingSubmission&&dareupPendingSubmission.key===key?'⚠️ Réponse non enregistrée. Appuie sur Réessayer.':(mine?'✍️ Réponds par message ou photo. Tu peux refuser.':'⏳ Ton partenaire prépare sa réponse.'));
  if(row?.kind==='photo'&&row.id!==duoLastResponseId){duoLastResponseId=row.id;media.replaceChildren();const photos=await authenticated('/rest/v1/duo_turn_photos?select=image_data&response_id=eq.'+row.id+'&limit=1');if(photos?.[0]){const img=document.createElement('img');img.src=photos[0].image_data;img.alt='Photo de réponse';img.className='duoAnswerPhoto';media.append(img)}}
  else if(!row||row.kind!=='photo'){media.replaceChildren();duoLastResponseId=''}
@@ -609,7 +624,7 @@ async function duoRefresh(){
  const last=messages.length?messages[messages.length-1].id:'';
  const photos=await authenticated('/rest/v1/rpc/dareup_v59_list_photos','POST',{p_room_id:room});
  const photoKey=(photos||[]).map(p=>p.id).join(',');
- if(last!==duoLastMsg||photoKey!==duoLastPhotoKey){duoLastMsg=last;duoLastPhotoKey=photoKey;const box=$('duoMessages');const liveCard=$('duoCardModal');if(liveCard.parentElement===box)liveCard.remove();box.replaceChildren();const entries=[...messages.map(m=>({...m,entryType:'text'})),...(photos||[]).map(p=>({...p,entryType:'photo'}))].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));for(const m of entries){const line=document.createElement('div');line.className='duoBubble '+(m.sender_id===session.user.id?'duoMine':'duoOther')+(m.entryType==='photo'?' duoPhotoBubble':'');const label=document.createElement('b');label.textContent=m.sender_id===session.user.id?'Moi':'Partenaire';label.className='duoBubbleName';line.append(label);if(m.entryType==='photo'){const img=document.createElement('img');img.src=m.image_data;img.alt='Photo envoyée — toucher pour agrandir';img.className='duoChatImage';img.loading='lazy';img.onclick=()=>openPhotoViewer(m.image_data);line.append(img)}else{line.append(document.createTextNode(m.message))}const stamp=document.createElement('time');stamp.className='duoBubbleTime';stamp.textContent=new Date(m.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});line.append(stamp);box.append(line)}v78EnsureCard();$('duoCardModal').hidden=!key;box.scrollTop=box.scrollHeight;}
+ if(last!==duoLastMsg||photoKey!==duoLastPhotoKey){duoLastMsg=last;duoLastPhotoKey=photoKey;const box=$('duoMessages');const liveCard=$('duoCardModal');const liveReview=$('duoReviewBar');if(liveCard.parentElement===box)liveCard.remove();if(liveReview.parentElement===box)liveReview.remove();box.replaceChildren();const entries=[...messages.map(m=>({...m,entryType:'text'})),...(photos||[]).map(p=>({...p,entryType:'photo'}))].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));for(const m of entries){const line=document.createElement('div');line.className='duoBubble '+(m.sender_id===session.user.id?'duoMine':'duoOther')+(m.entryType==='photo'?' duoPhotoBubble':'');const label=document.createElement('b');label.textContent=m.sender_id===session.user.id?'Moi':'Partenaire';label.className='duoBubbleName';line.append(label);if(m.entryType==='photo'){const img=document.createElement('img');img.src=m.image_data;img.alt='Photo envoyée — toucher pour agrandir';img.className='duoChatImage';img.loading='lazy';img.onclick=()=>openPhotoViewer(m.image_data);line.append(img)}else{line.append(document.createTextNode(m.message))}const stamp=document.createElement('time');stamp.className='duoBubbleTime';stamp.textContent=new Date(m.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});line.append(stamp);box.append(line)}v78EnsureCard();$('duoCardModal').hidden=!key;box.scrollTop=box.scrollHeight;}
  if(key!==v78LastCardKey){v78LastCardKey=key;v78EnsureCard();$('duoMessages').scrollTop=$('duoMessages').scrollHeight;}
  }catch(e){$('duoInfo').textContent='Erreur de synchronisation : '+e.message}
  finally{duoBusy=false}
