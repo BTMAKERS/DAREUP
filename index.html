@@ -522,7 +522,12 @@ function showDuoCard(){if(!duoModalKey)return;$('duoCardModal').hidden=false;duo
 let duoResponseKey='',duoLastResponseId='',duoReplyArmed=false;
 let v78CanReply=false,v78Discuss=false,v78LastCardKey='',v78HasReply=false;
 let dareupPendingSubmission=null;
-function dareupResponseError(message){const el=$('duoAnswerState');el.textContent='⚠️ '+message;el.style.color='#ffdf89';toast(message)}
+function dareupDuoNotify(message){
+ const el=document.getElementById('duoInfo');
+ if(el)el.textContent=String(message);
+ console.warn('[DAREUP Duo]',message);
+}
+function dareupResponseError(message){const el=$('duoAnswerState');el.textContent='⚠️ '+message;el.style.color='#ffdf89';dareupDuoNotify(message)}
 function armDuoText(){duoReplyArmed=true;$('duoChatReplyHint').hidden=false;$('duoChatText').placeholder='Ta réponse à la carte…';$('duoChatText').focus();}
 $('duoCancelReply').onclick=()=>{duoReplyArmed=false;v78Discuss=true;$('duoChatReplyHint').hidden=true;$('duoChatText').placeholder='💬 Discuter librement…';v78UpdateComposer()};
 $('v78Discuss').onclick=()=>{v78Discuss=!v78Discuss;duoReplyArmed=false;$('duoChatReplyHint').hidden=true;v78UpdateComposer();$('duoChatText').focus()};
@@ -672,7 +677,7 @@ async function duoRefresh(){
  }catch(e){$('duoInfo').textContent='Erreur de synchronisation : '+e.message}
  finally{duoBusy=false}
 }
-async function duoChoose(kind){if(!matchRoom)return;const b=$('duoTruth'),d=$('duoDare');b.disabled=d.disabled=true;try{await authenticated('/rest/v1/rpc/'+(['couple','soiree','extreme','adulte'].includes(matchRoom.game_mode)?'dareup_premium_next_card':'duo_next_card'),'POST',{p_room_id:matchRoom.id,p_kind:kind});duoDismissedKey='';await duoRefresh()}catch(e){const msg='Impossible de tirer la carte : '+e.message;$('duoInfo').textContent=msg;$('duoCard').textContent=msg;toast(msg)}finally{b.disabled=false;d.disabled=false;await duoRefresh()}}
+async function duoChoose(kind){if(!matchRoom)return;const b=$('duoTruth'),d=$('duoDare');b.disabled=d.disabled=true;try{await authenticated('/rest/v1/rpc/'+(['couple','soiree','extreme','adulte'].includes(matchRoom.game_mode)?'dareup_premium_next_card':'duo_next_card'),'POST',{p_room_id:matchRoom.id,p_kind:kind});duoDismissedKey='';await duoRefresh()}catch(e){const msg='Impossible de tirer la carte : '+e.message;$('duoInfo').textContent=msg;$('duoCard').textContent=msg;dareupDuoNotify(msg)}finally{b.disabled=false;d.disabled=false;await duoRefresh()}}
 async function duoAction(rpc,extra={}){
  if(!matchRoom)return;
  try{await authenticated('/rest/v1/rpc/'+rpc,'POST',{p_room_id:matchRoom.id,...extra});await duoRefresh()}
@@ -696,7 +701,7 @@ $('duoNewPartner').onclick=async()=>{
  catch(e){matchStatus.textContent='Erreur : '+e.message}
 };
 $('duoTruth').onclick=()=>duoChoose('truth');$('duoDare').onclick=()=>duoChoose('dare');
-$('duoChatForm').onsubmit=async e=>{e.preventDefault();if(!matchRoom)return;const input=$('duoChatText'),message=input.value.trim();if(!message)return;const isReply=!!duoModalKey&&v78CanReply&&!v78HasReply&&!v78Discuss||duoReplyArmed;try{await authenticated('/rest/v1/room_messages','POST',{room_id:matchRoom.id,sender_id:session.user.id,message});input.value='';if(isReply){duoReplyArmed=false;$('duoChatReplyHint').hidden=true;await duoMarkResponse('text',message)}await duoRefresh()}catch(err){$('duoInfo').textContent='Message non envoyé : '+err.message;toast('Message non envoyé : '+err.message)}};
+$('duoChatForm').onsubmit=async e=>{e.preventDefault();if(!matchRoom)return;const input=$('duoChatText'),message=input.value.trim();if(!message)return;const isReply=!!duoModalKey&&v78CanReply&&!v78HasReply&&!v78Discuss||duoReplyArmed;try{await authenticated('/rest/v1/room_messages','POST',{room_id:matchRoom.id,sender_id:session.user.id,message});input.value='';if(isReply){duoReplyArmed=false;$('duoChatReplyHint').hidden=true;await duoMarkResponse('text',message)}await duoRefresh()}catch(err){$('duoInfo').textContent='Message non envoyé : '+err.message;dareupDuoNotify('Message non envoyé : '+err.message)}};
 $('leaveMatch').onclick=async()=>{if(!matchRoom)return;try{await authenticated('/rest/v1/rpc/duo_leave_room','POST',{p_room_id:matchRoom.id});stopDuo();matchRoom=null;$('matchFound').hidden=true;matchStatus.textContent='Partie terminée, chat fermé.'}catch(e){matchStatus.textContent='Erreur : '+e.message}};
 // V5.9 : photos conservées dans le salon jusqu'à sa fermeture, affichage agrandissable.
 function openPhotoViewer(src){$('duoPhotoImage').src=src;$('duoPhotoViewer').hidden=false;}
@@ -742,7 +747,7 @@ $('duoCamera').onchange=async e=>{
    $('duoPhotoStatus').textContent='📸 Réponse photo enregistrée : en attente de validation.';
   }
   await duoRefresh();
- }catch(err){$('duoPhotoStatus').textContent='⚠️ Envoi photo impossible : '+err.message;toast('Photo : '+err.message)}
+ }catch(err){$('duoPhotoStatus').textContent='⚠️ Envoi photo impossible : '+err.message;dareupDuoNotify('Photo : '+err.message)}
  finally{dareupPhotoSending=false;}
 };
 $('logoutBtn').onclick=async()=>{stopPrivateWait();stopDuo();stopPolling();try{await authenticated('/auth/v1/logout','POST')}catch{}session=null;save();updateUI()};
