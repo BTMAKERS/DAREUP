@@ -927,7 +927,7 @@ async function getSession(){
 async function api(path,method='GET',body,publicRead=false){
  const s=publicRead?null:(adminSession=await getSession());
  if(!publicRead&&!s)throw Error('Connecte-toi à ton compte administrateur.');
- const r=await fetch(URL+'/rest/v1/'+path,{method,headers:{apikey:KEY,...(s?{Authorization:'Bearer '+s.access_token}:{}),'Content-Type':'application/json',Prefer:'return=representation'},body:body===undefined?undefined:JSON.stringify(body)});
+ const r=await fetch(URL+'/rest/v1/'+path,{method,headers:{apikey:KEY,...(s?{Authorization:'Bearer '+s.access_token}:{}),'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=representation'},body:body===undefined?undefined:JSON.stringify(body)});
  const t=await r.text();let d;try{d=t?JSON.parse(t):null}catch{d={message:t}};
  if(!r.ok)throw Error(d?.message||d?.error||'Erreur Supabase');
  return d;
@@ -1018,7 +1018,7 @@ async function session(){
 }
 async function req(path,method='GET',body,raw=false){
  current=await session();if(!current)throw Error('Connecte-toi à DAREUP pour modifier ton profil.');
- const r=await fetch(URL+path,{method,headers:{apikey:KEY,Authorization:'Bearer '+current.access_token,...(raw?{}:{'Content-Type':'application/json'}),...(method==='PATCH'?{Prefer:'return=representation'}:{}),...(raw?{'x-upsert':'true','Content-Type':body.type}: {})},body:body===undefined?undefined:raw?body:JSON.stringify(body)});
+ const r=await fetch(URL+path,{method,headers:{apikey:KEY,Authorization:'Bearer '+current.access_token,...(raw?{}:{'Content-Type':'application/json'}),...(method==='PATCH'?{Prefer:'resolution=merge-duplicates,return=representation'}:{}),...(raw?{'x-upsert':'true','Content-Type':body.type}: {})},body:body===undefined?undefined:raw?body:JSON.stringify(body)});
  const txt=await r.text();let data;try{data=txt?JSON.parse(txt):null}catch{data={message:txt}};
  if(!r.ok)throw Error(data?.message||data?.error||'Erreur de connexion');
  return data;
@@ -1084,7 +1084,7 @@ async function session(){
 }
 async function api(path,method='GET',body){
  const s=await session();
- const r=await fetch(URL+'/rest/v1/'+path,{method,headers:{apikey:KEY,Authorization:'Bearer '+s.access_token,'Content-Type':'application/json',Prefer:'return=representation'},body:body===undefined?undefined:JSON.stringify(body)});
+ const r=await fetch(URL+'/rest/v1/'+path,{method,headers:{apikey:KEY,Authorization:'Bearer '+s.access_token,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=representation'},body:body===undefined?undefined:JSON.stringify(body)});
  const t=await r.text();let d;try{d=t?JSON.parse(t):null}catch{d={message:t}};
  if(!r.ok)throw Error(d?.message||d?.error||'Erreur Supabase');
  return d;
@@ -1146,4 +1146,59 @@ if(panel && panel.parentElement!==document.body){
   document.body.appendChild(panel);
 }
 })();
-</script><script id="dareup-pwa-v84">(()=>{if(!('serviceWorker' in navigator))return;window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).catch(err=>console.warn('PWA:',err)));})();</script></body></html>
+</script><script id="dareup-pwa-v84">(()=>{if(!('serviceWorker' in navigator))return;window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js',{scope:'./'}).catch(err=>console.warn('PWA:',err)));})();</script>
+<style id="dareup-v9-online-style">
+#v9OnlinePanel{margin:16px 0;padding:17px;border-radius:20px;background:#faf5ff;color:#322042;border:1px solid #e9d5ff;text-align:left}
+#v9OnlinePanel h3{margin:0 0 8px;color:#6525a4}#v9OnlinePanel button{cursor:pointer}
+#v9OnlinePanel .v9Row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #eadcf5;flex-wrap:wrap}
+#v9OnlinePanel .v9Row span{flex:1;min-width:100px}#v9OnlinePanel .v9Row button{width:auto;padding:9px 12px;border-radius:12px;background:#7c3aed;color:white;border:0}
+#v9OnlinePanel .v9Options{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}#v9OnlinePanel select{padding:9px;border-radius:10px;max-width:100%}
+#v9OnlinePanel .v9Muted{font-size:12px;color:#695b77}#v9OnlinePanel .v9Row button.v9Decline{background:#e9d5ff;color:#52237c}
+</style>
+<script id="dareup-v9-online-script">
+(()=>{'use strict';
+const BASE='https://ninutrrrcwwnsclapaxq.supabase.co';
+const APIKEY='sb_publishable_7QqdgO3kk9qQ2mThUhUC-A_gmhkDAZ8';
+const $=id=>document.getElementById(id);
+let lastId=null, busy=false;
+function getSession(){try{return JSON.parse(localStorage.getItem('dareup_v4_session')||'null')}catch{return null}}
+async function api(path,method='GET',body){const ss=getSession();if(!ss?.access_token||!ss?.user?.id)throw Error('Reconnecte-toi pour afficher les joueurs.');const r=await fetch(BASE+path,{method,headers:{apikey:APIKEY,Authorization:'Bearer '+ss.access_token,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=representation'},body:body===undefined?undefined:JSON.stringify(body)});const t=await r.text();let j;try{j=t?JSON.parse(t):null}catch{j={message:t}}if(!r.ok)throw Error(j?.message||j?.error||'Erreur '+r.status);return j}
+function node(tag,txt){const e=document.createElement(tag);if(txt!==undefined)e.textContent=txt;return e}
+function row(parent,label,buttons){const r=node('div');r.className='v9Row';r.append(node('span',label));buttons.forEach(([txt,cb,cls])=>{const b=node('button',txt);if(cls)b.className=cls;b.type='button';b.onclick=cb;r.append(b)});parent.append(r)}
+async function updateSettings(fields){const ss=getSession();await api('/rest/v1/dareup_v9_player_settings?on_conflict=user_id','POST',{user_id:ss.user.id,...fields,updated_at:new Date().toISOString()})}
+function build(){if($('v9OnlinePanel'))return;const target=$('accountPanel');if(!target)return;const el=node('section');el.id='v9OnlinePanel';el.innerHTML='<h3>💜 Joueurs en ligne</h3><p class="v9Muted">Joueurs disponibles récemment. Une invitation ne démarre pas automatiquement une partie.</p><div class="v9Options"><label>Je suis <select id="v9Gender"><option value="non_precise">Non précisé</option><option value="homme">Homme</option><option value="femme">Femme</option><option value="autre">Autre</option></select></label><label>Je recherche <select id="v9Preference"><option value="tous">Tous</option><option value="homme">Hommes</option><option value="femme">Femmes</option></select></label></div><label><input id="v9Available" type="checkbox"> Disponible pour jouer</label><p class="v9Muted" id="v9Info">Chargement…</p><h4>Joueurs disponibles</h4><div id="v9Players"></div><h4>Invitations reçues</h4><div id="v9Received"></div><h4>Invitations envoyées</h4><div id="v9Sent"></div><button id="v9Reload" type="button">🔄 Actualiser</button>';
+target.prepend(el);
+$('v9Reload').onclick=()=>load(true);
+$('v9Gender').onchange=()=>updateSettings({gender:$('v9Gender').value}).then(()=>load(true)).catch(showErr);
+$('v9Preference').onchange=()=>updateSettings({preferred_partner:$('v9Preference').value}).then(()=>load(true)).catch(showErr);
+$('v9Available').onchange=()=>updateSettings({available:$('v9Available').checked,last_seen_at:new Date().toISOString()}).then(()=>load(true)).catch(showErr);
+}
+function showErr(e){if($('v9Info'))$('v9Info').textContent='⚠️ '+e.message}
+async function load(force=false){const ss=getSession();if(!ss?.user?.id||!$('accountPanel')||$('accountPanel').hidden)return;if(busy)return;build();busy=true;try{
+const uid=ss.user.id;const settings=await api('/rest/v1/dareup_v9_player_settings?user_id=eq.'+uid+'&select=*');
+let mine=settings?.[0];if(!mine){await updateSettings({gender:'non_precise',preferred_partner:'tous',available:false,last_seen_at:new Date().toISOString()});mine=(await api('/rest/v1/dareup_v9_player_settings?user_id=eq.'+uid+'&select=*'))[0]}
+$('v9Gender').value=mine.gender||'non_precise';$('v9Preference').value=mine.preferred_partner||'tous';$('v9Available').checked=!!mine.available;
+if(mine.available)await api('/rest/v1/dareup_v9_player_settings?user_id=eq.'+uid,'PATCH',{last_seen_at:new Date().toISOString()});
+const since=new Date(Date.now()-90000).toISOString();const [players,invites]=await Promise.all([
+api('/rest/v1/dareup_v9_player_settings?available=eq.true&last_seen_at=gte.'+encodeURIComponent(since)+'&user_id=neq.'+uid+'&select=user_id,gender,preferred_partner,last_seen_at&limit=60'),
+api('/rest/v1/dareup_v9_invitations?or=(sender_id.eq.'+uid+',recipient_id.eq.'+uid+')&status=eq.pending&select=*&order=created_at.desc&limit=60')]);
+const ids=[...new Set([...(players||[]).map(p=>p.user_id),...(invites||[]).flatMap(i=>[i.sender_id,i.recipient_id])])].filter(x=>x!==uid);
+let names={};if(ids.length){try{const prof=await api('/rest/v1/profiles?id=in.('+ids.join(',')+')&select=id,username');for(const p of prof||[])names[p.id]=p.username||'Joueur'}catch(e){/* Profil non accessible: afficher Joueur */}}
+const label=id=>names[id]||'Joueur '+id.slice(0,6);
+const pbox=$('v9Players');pbox.replaceChildren();const filtered=(players||[]).filter(p=>mine.preferred_partner==='tous'||p.gender===mine.preferred_partner).filter(p=>p.preferred_partner==='tous'||p.preferred_partner===mine.gender);
+if(!filtered.length)pbox.append(node('p','Aucun joueur disponible pour le moment.'));
+for(const p of filtered)row(pbox,'🟢 '+label(p.user_id)+' · '+(p.gender||'non précisé'),[['Inviter',async()=>{try{await api('/rest/v1/dareup_v9_invitations','POST',{sender_id:uid,recipient_id:p.user_id,status:'pending'});await load(true)}catch(e){showErr(e)}}]]);
+const rec=$('v9Received');rec.replaceChildren();const received=(invites||[]).filter(i=>i.recipient_id===uid);if(!received.length)rec.append(node('p','Aucune invitation en attente.'));
+for(const i of received)row(rec,'✉️ '+label(i.sender_id),[['Accepter',()=>respond(i.id,true)],['Refuser',()=>respond(i.id,false),'v9Decline']]);
+const sent=$('v9Sent');sent.replaceChildren();const outgoing=(invites||[]).filter(i=>i.sender_id===uid);if(!outgoing.length)sent.append(node('p','Aucune invitation envoyée.'));
+for(const i of outgoing)row(sent,'📨 '+label(i.recipient_id),[['Annuler',()=>cancel(i.id),'v9Decline']]);
+$('v9Info').textContent=mine.available?'🟢 Tu es disponible pour jouer.':'⚪ Active « Disponible pour jouer » pour apparaître dans la liste.';
+}catch(e){showErr(e)}finally{busy=false}}
+async function respond(id,accept){try{await api('/rest/v1/rpc/dareup_v9_respond_invitation','POST',{p_invitation_id:id,p_accept:accept});await load(true);if(accept)alert('Invitation acceptée ! La connexion à un salon de jeu sera intégrée dans la prochaine étape.')}catch(e){showErr(e)}}
+async function cancel(id){try{await api('/rest/v1/rpc/dareup_v9_cancel_invitation','POST',{p_invitation_id:id});await load(true)}catch(e){showErr(e)}}
+setInterval(()=>{if(document.visibilityState==='visible')load()},25000);
+window.addEventListener('focus',()=>load());
+setTimeout(()=>load(),1800);
+})();
+</script>
+</body></html>
