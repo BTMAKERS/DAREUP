@@ -417,7 +417,18 @@ body.duoChatOpen{overflow:hidden!important}
 #duoMessages .dareupPhotoTileText small{font-size:12px;color:#7e6b9b}
 #duoMessages .dareupPhotoTile:focus-visible{outline:3px solid #a78bfa;outline-offset:2px}
 </style>
-</head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
+<style>
+/* DAREUP V9.4 - explication au debut de chaque salon */
+#dareupV94Rules:not([hidden]){position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;background:rgba(14,7,27,.9);padding:18px;overflow-y:auto}
+#dareupV94Rules .v94Box{width:min(100%,430px);max-height:calc(100dvh - 36px);overflow-y:auto;background:linear-gradient(155deg,#28133d,#43205c);border:1px solid #a66bd0;border-radius:24px;padding:23px 20px;color:#fff;box-shadow:0 18px 70px #0009;font-family:system-ui,sans-serif}
+#dareupV94Rules h2{font-size:25px;text-align:center;margin:0 0 8px;color:#fff}
+#dareupV94Rules .v94Lead{text-align:center;color:#e3d2ef;margin:0 0 18px;font-size:14px}
+#dareupV94Rules .v94Rule{display:flex;gap:11px;align-items:flex-start;background:#ffffff12;border:1px solid #ffffff17;border-radius:14px;padding:11px 12px;margin:9px 0;font-size:14px;line-height:1.4}
+#dareupV94Rules .v94Rule b{color:#f2d6ff}
+#dareupV94Rules .v94Emoji{font-size:23px;flex:none}
+#dareupV94Rules .v94Start{width:100%;border:0;border-radius:14px;padding:15px;background:#ad6be9;color:#fff;font-size:16px;font-weight:800;margin-top:15px;cursor:pointer}
+#dareupV94Rules .v94Note{font-size:12px;color:#dac7e8;text-align:center;margin:12px 0 0}
+</style></head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
 <div class="homeModeGrid">
 <button class="homeModeCard" id="homeLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Joue sur le même téléphone, sans connexion ni compte · 2 à 15 joueurs</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homePrivate" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>DUO PRIVÉ</strong><small>Invite ton partenaire avec un code et joue à deux en ligne</small></span><span class="homeModeArrow">›</span></button>
@@ -719,7 +730,22 @@ async function duoRefreshResponse(key,actor){
  else if(!row||row.kind!=='photo'){media.replaceChildren();duoLastResponseId=''}
 }
 function stopDuo(){try{sessionStorage.removeItem('dareup_active_duo')}catch{}dareupPendingSubmission=null;$('duoRetrySubmit').hidden=true;v78LastCardKey='';v78CanReply=false;v78Discuss=false;document.body.classList.remove('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoCardModal').hidden=true;$('duoMiniCard').hidden=true;duoModalKey='';duoDismissedKey='';photoReset();if(duoTimer){clearInterval(duoTimer);duoTimer=null} $('duoPanel').hidden=true;duoLastMsg='';duoLastPhotoKey=''}
-function openDuo(){if(!matchRoom)return;try{sessionStorage.setItem('dareup_active_duo',JSON.stringify({user_id:session.user.id,room:matchRoom}))}catch{}v78EnsureCard();$('duoPanel').hidden=false;document.body.classList.add('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoChatPartner').textContent=duoPlayerName(matchRoom.player1_id===session.user.id?matchRoom.player2_id:matchRoom.player1_id);duoRefresh();if(!duoTimer)duoTimer=setInterval(duoRefresh,2200)}
+function dareupV94ShowRules(){
+ if(!matchRoom||!session?.user?.id)return;
+ const key='dareup_v94_rules_'+session.user.id+'_'+matchRoom.id;
+ try{if(sessionStorage.getItem(key)==='ok')return}catch(e){}
+ let overlay=document.getElementById('dareupV94Rules');
+ if(!overlay){
+  overlay=document.createElement('div');overlay.id='dareupV94Rules';overlay.setAttribute('role','dialog');overlay.setAttribute('aria-modal','true');overlay.setAttribute('aria-label','Règles de la partie');
+  overlay.innerHTML='<div class="v94Box"><h2>💜 Prêts à jouer ?</h2><p class="v94Lead">Voici comment se déroule votre partie DAREUP.</p><div class="v94Rule"><span class="v94Emoji">🎲</span><span>À chaque tour, choisis une carte <b>Action</b> ou <b>Vérité</b>.</span></div><div class="v94Rule"><span class="v94Emoji">💬</span><span>Réponds dans le chat, par message ou photo. Tu peux aussi passer ton tour.</span></div><div class="v94Rule"><span class="v94Emoji">✅</span><span>Ton partenaire examine ta réponse et <b>valide</b> le défi avant l’attribution des points.</span></div><div class="v94Rule"><span class="v94Emoji">🏅</span><span><b>Vérité : 5 points</b> · <b>Action : 10 points</b>.</span></div><div class="v94Rule"><span class="v94Emoji">🏆</span><span>Le premier joueur à <b>50 points</b> gagne ! Vous pourrez ensuite rejouer ensemble.</span></div><button type="button" class="v94Start" id="dareupV94Start">J’ai compris, commencer la partie 🚀</button><p class="v94Note">Respecte ton partenaire : chacun peut refuser un défi.</p></div>';
+  document.body.appendChild(overlay);
+ }
+ overlay.hidden=false;
+ const btn=document.getElementById('dareupV94Start');
+ btn.onclick=()=>{try{sessionStorage.setItem(key,'ok')}catch(e){}overlay.hidden=true};
+ btn.focus();
+}
+function openDuo(){if(!matchRoom)return;try{sessionStorage.setItem('dareup_active_duo',JSON.stringify({user_id:session.user.id,room:matchRoom}))}catch{}v78EnsureCard();$('duoPanel').hidden=false;document.body.classList.add('duoChatOpen');$('duoPanel').classList.remove('duoMinimized');$('duoChatPartner').textContent=duoPlayerName(matchRoom.player1_id===session.user.id?matchRoom.player2_id:matchRoom.player1_id);duoRefresh();if(!duoTimer)duoTimer=setInterval(duoRefresh,2200);dareupV94ShowRules()}
 async function duoRefresh(){
  if(duoBusy||!matchRoom||!session)return;duoBusy=true;
  try{
