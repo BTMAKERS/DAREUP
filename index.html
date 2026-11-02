@@ -373,6 +373,41 @@ body.duoChatOpen{background:#fff!important;color:#24152f!important}
 #duoChatBottom button{background:#f4eafb!important;color:#6b218e!important}
 #duoPhotoStatus{background:#fff!important;color:#6e4383!important}
 </style>
+
+<style id="dareup-v8-2-compact-chat">
+/* V8.2: compact card, readable scoreboard, independent scroll, white/lavender theme. */
+body.duoChatOpen{overflow:hidden!important}
+#duoPanel:not([hidden]){display:flex!important;flex-direction:column!important;min-height:0!important;height:100dvh!important;overflow:hidden!important;background:#fff!important}
+#duoChatTop{min-height:54px!important;padding:7px 12px!important;flex-shrink:0!important}
+#duoTurn{font-size:12px!important;padding:3px 10px!important;line-height:1.3!important;flex-shrink:0!important}
+#duoScore{padding:7px 10px!important;margin:0!important;min-height:44px!important;font-size:12px!important;line-height:1.35!important;color:#542077!important;background:#faf6fd!important;flex-shrink:0!important}
+#duoScore, #duoScore *{color:#542077!important;text-shadow:none!important;opacity:1!important}
+#duoPickRow{padding:5px 10px!important;gap:7px!important;flex-shrink:0!important}
+#duoPickRow button{padding:7px 9px!important;min-height:34px!important;font-size:12px!important}
+#duoActiveCardDock{order:4!important;flex:0 0 auto!important;min-height:0!important;max-height:min(34dvh,255px)!important;overflow-y:auto!important;overflow-x:hidden!important;padding:5px 10px!important;background:#fff!important;overscroll-behavior:contain!important;scrollbar-width:thin!important}
+#duoActiveCardDock #duoCardModal:not([hidden]){display:block!important;position:relative!important;inset:auto!important;overflow:visible!important;max-height:none!important;padding:0!important}
+#duoActiveCardDock #duoCardModal .modalBox{box-sizing:border-box!important;max-height:none!important;overflow:visible!important;padding:10px 12px!important;border-radius:17px!important;text-align:left!important;background:linear-gradient(125deg,#b657e9,#7e25b4)!important}
+#duoModalTurn{font-size:11px!important;margin:0 0 4px!important;line-height:1.2!important}
+#duoModalCard{font-size:17px!important;line-height:1.25!important;margin:4px 0 6px!important;overflow-wrap:anywhere!important}
+#duoAnswerState{font-size:11px!important;line-height:1.3!important;margin:3px 0 5px!important}
+#duoCardModal .modalActions{margin-top:5px!important;gap:6px!important}
+#duoCardModal .modalActions button,#duoModalSkip,#duoHideCard,#duoRetrySubmit{padding:7px 8px!important;min-height:32px!important;font-size:11px!important;margin-top:3px!important}
+#duoCardModal .modalBox>p.authHint{display:none!important}
+#duoHideCard{display:none!important}
+#duoActiveCardDock #duoReviewBar:not([hidden]){padding:8px 10px!important;gap:4px!important}
+#duoMessages{order:5!important;flex:1 1 0!important;min-height:70px!important;height:auto!important;overflow-y:auto!important;overflow-x:hidden!important;padding:10px 12px!important;background:#fff!important;overscroll-behavior:contain!important}
+#duoMessages .duoBubble{padding:9px 11px!important;margin-bottom:8px!important;max-width:78%!important}
+#duoMessages .duoChatImage{max-width:100%!important;height:auto!important;max-height:240px!important;object-fit:contain!important}
+#duoChatReplyHint:not([hidden]){flex-shrink:0!important;padding:5px 10px!important}
+#duoChatForm{order:7!important;flex:0 0 auto!important;min-height:56px!important;padding:6px 10px!important;gap:7px!important;background:#fff!important}
+#duoChatText{height:42px!important}
+#duoChatPhoto,#duoChatForm button[type=submit]{width:42px!important;height:42px!important;min-width:42px!important}
+#duoChatBottom{order:8!important;flex:0 0 auto!important;padding:4px 10px!important}
+#duoChatBottom button{padding:5px 10px!important;font-size:11px!important}
+#duoPhotoStatus{display:none!important}
+@media(max-height:750px){#duoActiveCardDock{max-height:30dvh!important}#duoModalCard{font-size:15px!important}#duoPickRow{padding:3px 10px!important}#duoScore{min-height:38px!important}}
+@media(max-height:600px){#duoActiveCardDock{max-height:27dvh!important}#duoChatTop{min-height:46px!important}#duoScore{padding:4px 10px!important}}
+</style>
 </head><body><main class="app"><header><div class="logo">✦ DARE<span>UP</span></div><button class="subtle" id="settingsBtn">⚙ Paramètres</button></header><section class="screen active" id="home"><div class="hero"><div class="orb">⚡</div><h1>OSE JOUER.<br/><em>OSE RÉPONDRE.</em></h1><p>Choisis comment tu veux jouer.</p></div>
 <div class="homeModeGrid">
 <button class="homeModeCard" id="homeLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Joue sur le même téléphone, sans connexion ni compte · 2 à 15 joueurs</small></span><span class="homeModeArrow">›</span></button>
