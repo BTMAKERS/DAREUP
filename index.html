@@ -522,12 +522,7 @@ function showDuoCard(){if(!duoModalKey)return;$('duoCardModal').hidden=false;duo
 let duoResponseKey='',duoLastResponseId='',duoReplyArmed=false;
 let v78CanReply=false,v78Discuss=false,v78LastCardKey='',v78HasReply=false;
 let dareupPendingSubmission=null;
-function dareupDuoNotify(message){
- const el=document.getElementById('duoInfo');
- if(el)el.textContent=String(message);
- console.warn('[DAREUP Duo]',message);
-}
-function dareupResponseError(message){const el=$('duoAnswerState');el.textContent='⚠️ '+message;el.style.color='#ffdf89';dareupDuoNotify(message)}
+function dareupResponseError(message){const el=$('duoAnswerState');el.textContent='⚠️ '+message;el.style.color='#ffdf89';toast(message)}
 function armDuoText(){duoReplyArmed=true;$('duoChatReplyHint').hidden=false;$('duoChatText').placeholder='Ta réponse à la carte…';$('duoChatText').focus();}
 $('duoCancelReply').onclick=()=>{duoReplyArmed=false;v78Discuss=true;$('duoChatReplyHint').hidden=true;$('duoChatText').placeholder='💬 Discuter librement…';v78UpdateComposer()};
 $('v78Discuss').onclick=()=>{v78Discuss=!v78Discuss;duoReplyArmed=false;$('duoChatReplyHint').hidden=true;v78UpdateComposer();$('duoChatText').focus()};
@@ -553,19 +548,14 @@ function duoPlayerName(id){if(!matchRoom)return 'ton partenaire';if(id===session
 async function duoMarkResponse(kind,caption){
  if(!matchRoom||!duoModalKey){dareupResponseError('Aucune carte active : réponse non validable.');return false;}
  try{
-  // The server checks photo existence and associates response_id itself.
-  // Never submit a photo as text: it would require a separate chat message.
   await authenticated('/rest/v1/rpc/dareup_v53_submit','POST',{p_room_id:matchRoom.id,p_kind:kind,p_caption:caption});
-  $('duoRetrySubmit').hidden=true;
   dareupPendingSubmission=null;v78HasReply=true;v78UpdateComposer();
   $('duoAnswerState').textContent='📨 Réponse envoyée. Ton partenaire doit maintenant la valider.';
   await duoRefresh();return true;
  }catch(e){
   dareupPendingSubmission={roomId:matchRoom.id,key:duoModalKey,kind,caption};
-  dareupResponseError('Réponse non enregistrée : '+e.message+'. Appuie sur Réessayer.');
-  $('duoRetrySubmit').hidden=false;
-  $('duoPhotoStatus').textContent=kind==='photo'?'⚠️ Erreur Supabase : '+e.message:'';
-  return false;
+  dareupResponseError('Réponse non enregistrée pour validation : '+e.message+'. Appuie sur Réessayer.');
+  $('duoRetrySubmit').hidden=false;return false;
  }
 }
 async function dareupRetrySubmission(){
@@ -594,7 +584,7 @@ async function duoRefreshResponse(key,actor){
  if(dareupPendingSubmission&&dareupPendingSubmission.key===key&&!row){$('duoRetrySubmit').hidden=false;}
  const mine=actor===session.user.id;v78HasReply=!!row;v78UpdateComposer();actions.hidden=!mine||!!row;skip.hidden=!mine||!!row;
  done.hidden=mine||!row||row.status!=='submitted';done.disabled=done.hidden;$('duoReviewBar').hidden=done.hidden;$('duoReviewConfirm').disabled=done.hidden;$('duoReviewCaption').textContent=row?.kind==='photo'?'📸 Photo reçue : regarde-la dans le chat puis valide.':row?.caption||'';done.textContent='✅ Valider la réponse de '+duoPlayerName(actor);
- status.textContent=row?(row.status==='submitted'?(mine?'📨 Réponse envoyée. En attente de validation par ton partenaire.':'📨 Réponse reçue ! Vérifie-la dans la conversation, puis valide.'):'Réponse traitée.'):(dareupPendingSubmission&&dareupPendingSubmission.key===key?'⚠️ Réponse non enregistrée. '+($('duoPhotoStatus').textContent||'Appuie sur Réessayer.'):(mine?'✍️ Réponds par message ou photo. Tu peux refuser.':'⏳ Ton partenaire prépare sa réponse.'));
+ status.textContent=row?(row.status==='submitted'?(mine?'📨 Réponse envoyée. En attente de validation par ton partenaire.':'📨 Réponse reçue ! Vérifie-la dans la conversation, puis valide.'):'Réponse traitée.'):(dareupPendingSubmission&&dareupPendingSubmission.key===key?'⚠️ Réponse non enregistrée. Appuie sur Réessayer.':(mine?'✍️ Réponds par message ou photo. Tu peux refuser.':'⏳ Ton partenaire prépare sa réponse.'));
  if(row?.kind==='photo'&&row.id!==duoLastResponseId){duoLastResponseId=row.id;media.replaceChildren();const photos=await authenticated('/rest/v1/duo_turn_photos?select=image_data&response_id=eq.'+row.id+'&limit=1');if(photos?.[0]){const img=document.createElement('img');img.src=photos[0].image_data;img.alt='Photo de réponse';img.className='duoAnswerPhoto';media.append(img)}}
  else if(!row||row.kind!=='photo'){media.replaceChildren();duoLastResponseId=''}
 }
@@ -677,7 +667,7 @@ async function duoRefresh(){
  }catch(e){$('duoInfo').textContent='Erreur de synchronisation : '+e.message}
  finally{duoBusy=false}
 }
-async function duoChoose(kind){if(!matchRoom)return;const b=$('duoTruth'),d=$('duoDare');b.disabled=d.disabled=true;try{await authenticated('/rest/v1/rpc/'+(['couple','soiree','extreme','adulte'].includes(matchRoom.game_mode)?'dareup_premium_next_card':'duo_next_card'),'POST',{p_room_id:matchRoom.id,p_kind:kind});duoDismissedKey='';await duoRefresh()}catch(e){const msg='Impossible de tirer la carte : '+e.message;$('duoInfo').textContent=msg;$('duoCard').textContent=msg;dareupDuoNotify(msg)}finally{b.disabled=false;d.disabled=false;await duoRefresh()}}
+async function duoChoose(kind){if(!matchRoom)return;const b=$('duoTruth'),d=$('duoDare');b.disabled=d.disabled=true;try{await authenticated('/rest/v1/rpc/'+(['couple','soiree','extreme','adulte'].includes(matchRoom.game_mode)?'dareup_premium_next_card':'duo_next_card'),'POST',{p_room_id:matchRoom.id,p_kind:kind});duoDismissedKey='';await duoRefresh()}catch(e){const msg='Impossible de tirer la carte : '+e.message;$('duoInfo').textContent=msg;$('duoCard').textContent=msg;toast(msg)}finally{b.disabled=false;d.disabled=false;await duoRefresh()}}
 async function duoAction(rpc,extra={}){
  if(!matchRoom)return;
  try{await authenticated('/rest/v1/rpc/'+rpc,'POST',{p_room_id:matchRoom.id,...extra});await duoRefresh()}
@@ -701,7 +691,7 @@ $('duoNewPartner').onclick=async()=>{
  catch(e){matchStatus.textContent='Erreur : '+e.message}
 };
 $('duoTruth').onclick=()=>duoChoose('truth');$('duoDare').onclick=()=>duoChoose('dare');
-$('duoChatForm').onsubmit=async e=>{e.preventDefault();if(!matchRoom)return;const input=$('duoChatText'),message=input.value.trim();if(!message)return;const isReply=!!duoModalKey&&v78CanReply&&!v78HasReply&&!v78Discuss||duoReplyArmed;try{await authenticated('/rest/v1/room_messages','POST',{room_id:matchRoom.id,sender_id:session.user.id,message});input.value='';if(isReply){duoReplyArmed=false;$('duoChatReplyHint').hidden=true;await duoMarkResponse('text',message)}await duoRefresh()}catch(err){$('duoInfo').textContent='Message non envoyé : '+err.message;dareupDuoNotify('Message non envoyé : '+err.message)}};
+$('duoChatForm').onsubmit=async e=>{e.preventDefault();if(!matchRoom)return;const input=$('duoChatText'),message=input.value.trim();if(!message)return;const isReply=!!duoModalKey&&v78CanReply&&!v78HasReply&&!v78Discuss||duoReplyArmed;try{await authenticated('/rest/v1/room_messages','POST',{room_id:matchRoom.id,sender_id:session.user.id,message});input.value='';if(isReply){duoReplyArmed=false;$('duoChatReplyHint').hidden=true;await duoMarkResponse('text',message)}await duoRefresh()}catch(err){$('duoInfo').textContent='Message non envoyé : '+err.message;toast('Message non envoyé : '+err.message)}};
 $('leaveMatch').onclick=async()=>{if(!matchRoom)return;try{await authenticated('/rest/v1/rpc/duo_leave_room','POST',{p_room_id:matchRoom.id});stopDuo();matchRoom=null;$('matchFound').hidden=true;matchStatus.textContent='Partie terminée, chat fermé.'}catch(e){matchStatus.textContent='Erreur : '+e.message}};
 // V5.9 : photos conservées dans le salon jusqu'à sa fermeture, affichage agrandissable.
 function openPhotoViewer(src){$('duoPhotoImage').src=src;$('duoPhotoViewer').hidden=false;}
@@ -719,37 +709,7 @@ async function cameraToData(file){
  for(const q of [.7,.55,.4,.28]){const data=canvas.toDataURL('image/jpeg',q);if(data.length<=230000)return data;}
  throw Error('Impossible de compresser la photo.');
 }
-// V7.22: the installed SQL function requires a photo in duo_turn_photos
-// BEFORE dareup_v53_submit(p_kind='photo') can create the answer.
-let dareupPhotoSending=false;
-$('duoCamera').onchange=async e=>{
- const file=e.target.files?.[0];e.target.value='';
- if(!file||!matchRoom||dareupPhotoSending)return;
- const photoRoomId=matchRoom.id;
- const activeReply=!!duoModalKey&&v78CanReply&&!v78HasReply&&!v78Discuss;
- const replyKey=duoModalKey;
- dareupPhotoSending=true;
- $('duoPhotoStatus').textContent='⏳ Envoi de la photo…';
- try{
-  const data=await cameraToData(file);
-  if(!matchRoom||matchRoom.id!==photoRoomId)throw Error('La partie a changé.');
-  // 1. Persist the actual photo first, including its room/turn through the RPC.
-  await authenticated('/rest/v1/rpc/dareup_v59_send_photo','POST',{p_room_id:photoRoomId,p_image_data:data});
-  $('duoPhotoStatus').textContent='📸 Photo envoyée dans la conversation.';
-  // 2. Register the photo as the answer. Free-chat photos are not answers.
-  if(activeReply){
-   if(!matchRoom||matchRoom.id!==photoRoomId||duoModalKey!==replyKey)throw Error('Le tour a changé pendant l’envoi de la photo.');
-   const registered=await duoMarkResponse('photo','📸 Photo envoyée');
-   if(!registered){
-    $('duoPhotoStatus').textContent='⚠️ Photo reçue, mais réponse non enregistrée. Appuie sur Réessayer.';
-    return;
-   }
-   $('duoPhotoStatus').textContent='📸 Réponse photo enregistrée : en attente de validation.';
-  }
-  await duoRefresh();
- }catch(err){$('duoPhotoStatus').textContent='⚠️ Envoi photo impossible : '+err.message;dareupDuoNotify('Photo : '+err.message)}
- finally{dareupPhotoSending=false;}
-};
+$('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);await authenticated('/rest/v1/rpc/dareup_v59_send_photo','POST',{p_room_id:matchRoom.id,p_image_data:data});await duoMarkResponse('photo','📸 Photo envoyée');$('duoPhotoStatus').textContent='📸 Photo conservée jusqu’à la fermeture du salon.';await duoRefresh()}catch(err){$('duoPhotoStatus').textContent='Erreur photo : '+err.message}};
 $('logoutBtn').onclick=async()=>{stopPrivateWait();stopDuo();stopPolling();try{await authenticated('/auth/v1/logout','POST')}catch{}session=null;save();updateUI()};
 try{session=JSON.parse(localStorage.getItem(storage)||'null')}catch{session=null}setMode('login');
 async function dareupRestoreDuo(){
