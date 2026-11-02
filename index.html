@@ -607,10 +607,10 @@ $('findMatch').onclick=async()=>{
  if($('matchMode').value==='adulte'&&!confirm('🔞 Ce mode est réservé aux personnes majeures (18 ans et plus). Confirmer que tu as 18 ans ou plus ?'))return;
  if(!window.DAREUP_PREMIUM&&window.DAREUP_FREE_REMAINING===0){matchStatus.textContent='Tes 2 matchs gratuits sont utilisés. Passe à Premium.';return}
  const v92Pref=document.querySelector('input[name="v92Preference"]:checked')?.value||'tous';
- if(v92Pref!=='tous'){matchStatus.textContent='Le filtre '+(v92Pref==='homme'?'Hommes':'Femmes')+' nécessite la mise à jour du matchmaking Supabase. Recherche non lancée pour éviter un mauvais jumelage.';return}
+ if(!['homme','femme','tous'].includes(v92Pref)){matchStatus.textContent='Choisis une préférence valide.';return}
  stopPolling();matchRoom=null;$('matchFound').hidden=true;matchControls(true);matchStatus.textContent='Recherche en cours…';
  try{
-  const data=await authenticated('/rest/v1/rpc/find_random_match','POST',{p_game_mode:$('matchMode').value});
+  const data=await authenticated('/rest/v1/rpc/find_random_match','POST',{p_game_mode:$('matchMode').value,p_preferred_partner:v92Pref});
   if(data){matchStatus.textContent='Partenaire trouvé, ouverture du salon…'}else matchStatus.textContent='En attente d’un autre joueur…';
   await pollMatch();if(!matchRoom&&session)matchTimer=setInterval(pollMatch,2500);
  }catch(e){matchControls(false);matchStatus.textContent='Erreur : '+e.message;loadProfile()}
