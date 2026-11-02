@@ -828,7 +828,22 @@ async function cameraToData(file){
  for(const q of [.7,.55,.4,.28]){const data=canvas.toDataURL('image/jpeg',q);if(data.length<=230000)return data;}
  throw Error('Impossible de compresser la photo.');
 }
-$('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);await authenticated('/rest/v1/rpc/dareup_v59_send_photo','POST',{p_room_id:matchRoom.id,p_image_data:data});await duoMarkResponse('photo','📸 Photo envoyée');$('duoPhotoStatus').textContent='📸 Photo conservée jusqu’à la fermeture du salon.';await duoRefresh()}catch(err){$('duoPhotoStatus').textContent='Erreur photo : '+err.message}};
+$('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);// A photo in the chat (V5.9) is not automatically a turn response (V5.3).
+ const isCardReply=!!duoModalKey&&v78CanReply&&!v78HasReply&&!v78Discuss;
+ if(isCardReply){
+  // Register the photo for the active turn BEFORE dareup_v53_submit.
+  // The SQL RPC enforces room, actor and turn and writes duo_turn_photos.
+  await authenticated('/rest/v1/rpc/dareup_v53_send_photo','POST',{p_room_id:matchRoom.id,p_image_data:data});
+ }
+ // Keep the existing chat photo flow unchanged.
+ await authenticated('/rest/v1/rpc/dareup_v59_send_photo','POST',{p_room_id:matchRoom.id,p_image_data:data});
+ if(isCardReply){
+  const saved=await duoMarkResponse('photo','📸 Photo envoyée');
+  $('duoPhotoStatus').textContent=saved?'📸 Photo envoyée, en attente de validation.':'⚠️ Photo dans le chat, mais réponse non enregistrée.';
+ }else{
+  $('duoPhotoStatus').textContent='📸 Photo envoyée dans la conversation.';
+ }
+ await duoRefresh()}catch(err){$('duoPhotoStatus').textContent='Erreur photo : '+err.message}};
 $('logoutBtn').onclick=async()=>{stopPrivateWait();stopDuo();stopPolling();try{await authenticated('/auth/v1/logout','POST')}catch{}session=null;save();updateUI()};
 try{session=JSON.parse(localStorage.getItem(storage)||'null')}catch{session=null}setMode('login');
 async function dareupRestoreDuo(){
