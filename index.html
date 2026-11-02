@@ -441,7 +441,7 @@ body.duoChatOpen{overflow:hidden!important}
 <button class="outline full" id="duoHideCard" type="button">💬 Mettre la carte en attente pour discuter</button><p class="authHint">Le partenaire voit la réponse avant de la valider. Refuser rapporte 0 point.</p></div></div>
 <div id="duoActiveCardDock" aria-label="Carte active et validation"></div><div id="duoChatDivider">MESSAGES</div><div aria-live="polite" id="duoMessages" style="height:320px;overflow-y:auto;background:#130f1d;border-radius:20px;padding:14px;text-align:left;border:1px solid #4c385e"></div>
 <button id="v78Discuss" type="button" hidden>💬 Discuter</button><div id="duoChatReplyHint" hidden>✍️ Ton prochain message sera envoyé comme réponse à la carte. <button type="button" id="duoCancelReply">Annuler</button></div><form class="row" id="duoChatForm" style="gap:6px;margin-top:10px"><input autocomplete="off" id="duoChatText" maxlength="1000" placeholder="Écrire un message…" required="" style="min-width:0;flex:1"/><button class="secondary" id="duoChatPhoto" type="button" aria-label="Envoyer une photo">📷</button><button class="secondary" type="submit">➤</button></form>
-<input id="duoCamera" type="file" accept="image/*" hidden><button id="duoPhotoBtn" type="button" hidden>📷 Photo</button><p id="duoPhotoStatus" class="authHint" aria-live="polite"></p><div id="duoPhotoInbox" hidden></div><div id="duoPhotoViewer" hidden role="dialog" aria-modal="true" aria-label="Photo agrandie"><button id="duoClosePhoto" type="button" aria-label="Fermer la photo">✕ Fermer</button><img id="duoPhotoImage" alt="Photo agrandie"/></div>
+<input id="duoCamera" type="file" accept="image/*" hidden><input id="duoLiveCamera" type="file" accept="image/*" capture="environment" hidden><button id="duoPhotoBtn" type="button" hidden>📷 Photo</button><p id="duoPhotoStatus" class="authHint" aria-live="polite"></p><div id="duoPhotoInbox" hidden></div><div id="duoPhotoViewer" hidden role="dialog" aria-modal="true" aria-label="Photo agrandie"><button id="duoClosePhoto" type="button" aria-label="Fermer la photo">✕ Fermer</button><img id="duoPhotoImage" alt="Photo agrandie"/></div>
 <div id="duoResponseMedia" aria-live="polite"></div><div id="duoReviewBar" hidden style="padding:12px;border:1px solid #c77aff;border-radius:14px;margin:12px 0;background:#3a2250"><strong>📩 Réponse reçue de ton partenaire</strong><p class="authHint" id="duoReviewCaption"></p><button type="button" class="primary full" id="duoReviewConfirm">✅ Valider la réponse</button></div><div id="duoChatBottom"><button class="secondary" id="duoReopenCard" type="button">🎴 Afficher la carte</button><button class="outline" id="duoExitRoom" type="button">Quitter la partie</button></div>
 <p class="authHint">Le chat se ferme lorsque le salon est terminé. N'échange pas d'informations personnelles avec un inconnu. Signaler / bloquer sera ajouté avant l'ouverture publique.</p>
 </div><button class="outline" id="leaveMatch" type="button">Fermer ce salon de test</button></div></div><button class="outline" id="accountContinue" type="button">← Continuer vers DAREUP</button><button class="outline" id="logoutBtn">Se déconnecter</button></div><p class="authHint">Paiement Premium actuellement en mode test. Les matchs gratuits sont limités côté serveur.</p></div><button class="outline" id="onlineHomeBtn">← Retour à l'accueil</button></section></main><script>// Questions originales, adaptées au jeu en groupe et sans défis dangereux.
@@ -654,7 +654,7 @@ function dareupResponseError(message){const el=$('duoAnswerState');el.textConten
 function armDuoText(){duoReplyArmed=true;$('duoChatReplyHint').hidden=false;$('duoChatText').placeholder='Ta réponse à la carte…';$('duoChatText').focus();}
 $('duoCancelReply').onclick=()=>{duoReplyArmed=false;v78Discuss=true;$('duoChatReplyHint').hidden=true;$('duoChatText').placeholder='💬 Discuter librement…';v78UpdateComposer()};
 $('v78Discuss').onclick=()=>{v78Discuss=!v78Discuss;duoReplyArmed=false;$('duoChatReplyHint').hidden=true;v78UpdateComposer();$('duoChatText').focus()};
-$('duoChatPhoto').onclick=()=>$('duoCamera').click();
+$('duoChatPhoto').onclick=()=>showDareupPhotoChoice();
 $('duoReopenCard').onclick=()=>{v78EnsureCard();$('duoCardModal').hidden=false;$('duoCardModal').scrollIntoView({behavior:'smooth',block:'nearest'});};
 $('duoMinimize').onclick=()=>{hideDuoCard();$('duoPanel').classList.toggle('duoMinimized');$('duoMinimize').textContent=$('duoPanel').classList.contains('duoMinimized')?'▢':'—'};
 $('duoExitRoom').onclick=()=>{$('leaveMatch').click()};
@@ -804,11 +804,11 @@ async function duoAction(rpc,extra={}){
 $('duoComplete').onclick=()=>duoReviewAnswer();
 $('duoSkip').onclick=()=>duoRefuseAnswer();
 $('duoReplyText').onclick=()=>armDuoText();
-$('duoReplyPhoto').onclick=()=>{if(!matchRoom)return;$('duoCamera').click();};
+$('duoReplyPhoto').onclick=()=>{if(!matchRoom)return;showDareupPhotoChoice();};
 $('duoHideCard').onclick=()=>{$('duoChatText').focus()};
 $('duoShowCard').onclick=showDuoCard;
 $('duoModalText').onclick=()=>armDuoText();
-$('duoModalPhoto').onclick=()=>{$('duoCamera').click();};
+$('duoModalPhoto').onclick=()=>{showDareupPhotoChoice();};
 
 $('duoModalDone').onclick=()=>duoReviewAnswer();
 $('duoModalSkip').onclick=()=>duoRefuseAnswer();
@@ -828,7 +828,23 @@ function photoReset(){clearPhotoViewer();$('duoPhotoInbox').replaceChildren();$(
 $('duoClosePhoto').onclick=clearPhotoViewer;
 $('duoPhotoViewer').onclick=e=>{if(e.target===$('duoPhotoViewer'))clearPhotoViewer()};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('duoPhotoViewer').hidden)clearPhotoViewer()});
-$('duoPhotoBtn').onclick=()=>{if(matchRoom)$('duoCamera').click()};
+$('duoPhotoBtn').onclick=()=>{if(matchRoom)showDareupPhotoChoice()};
+// V8.6: choose live camera or photo library without changing the upload/validation flow.
+function showDareupPhotoChoice(){
+ if(!matchRoom)return;
+ let overlay=document.getElementById('dareupPhotoChoice');
+ if(!overlay){
+  overlay=document.createElement('div');overlay.id='dareupPhotoChoice';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(14,7,28,.78);z-index:999999;display:flex;align-items:end;justify-content:center;padding:18px';
+  overlay.innerHTML='<div role="dialog" aria-modal="true" aria-label="Envoyer une photo" style="width:min(100%,420px);background:#211233;color:white;padding:22px;border-radius:22px;box-shadow:0 12px 45px #0008"><h3 style="margin:0 0 16px">📸 Envoyer une photo</h3><button type="button" id="dareupTakeNow" style="display:block;width:100%;padding:15px;margin:8px 0;border-radius:14px;background:#7c3aed;color:white;border:0;font-weight:700">📷 Prendre une photo</button><button type="button" id="dareupFromGallery" style="display:block;width:100%;padding:15px;margin:8px 0;border-radius:14px;background:#eee8ff;color:#34145c;border:0;font-weight:700">🖼️ Choisir dans la galerie</button><button type="button" id="dareupPhotoCancel" style="display:block;width:100%;padding:12px;margin-top:12px;border-radius:14px;background:transparent;color:white;border:1px solid #7c668e">Annuler</button></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#dareupTakeNow').onclick=()=>{overlay.remove();document.getElementById('duoLiveCamera').click()};
+  overlay.querySelector('#dareupFromGallery').onclick=()=>{overlay.remove();document.getElementById('duoCamera').click()};
+  overlay.querySelector('#dareupPhotoCancel').onclick=()=>overlay.remove();
+  overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
+ }
+}
+
 async function cameraToData(file){
  if(!file.type.startsWith('image/'))throw Error('Choisis une image.');
  if(file.size>15*1024*1024)throw Error('Photo trop volumineuse (15 Mo max).');
@@ -837,7 +853,7 @@ async function cameraToData(file){
  for(const q of [.7,.55,.4,.28]){const data=canvas.toDataURL('image/jpeg',q);if(data.length<=230000)return data;}
  throw Error('Impossible de compresser la photo.');
 }
-$('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);// A photo in the chat (V5.9) is not automatically a turn response (V5.3).
+const dareupPhotoUpload=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||!matchRoom)return;try{const data=await cameraToData(file);// A photo in the chat (V5.9) is not automatically a turn response (V5.3).
  const isCardReply=!!duoModalKey&&v78CanReply&&!v78HasReply&&!v78Discuss;
  if(isCardReply){
   // Register the photo for the active turn BEFORE dareup_v53_submit.
@@ -853,6 +869,8 @@ $('duoCamera').onchange=async e=>{const file=e.target.files?.[0];e.target.value=
   $('duoPhotoStatus').textContent='📸 Photo envoyée dans la conversation.';
  }
  await duoRefresh()}catch(err){$('duoPhotoStatus').textContent='Erreur photo : '+err.message}};
+$('duoCamera').onchange=dareupPhotoUpload;
+$('duoLiveCamera').onchange=dareupPhotoUpload;
 $('logoutBtn').onclick=async()=>{stopPrivateWait();stopDuo();stopPolling();try{await authenticated('/auth/v1/logout','POST')}catch{}session=null;save();updateUI()};
 try{session=JSON.parse(localStorage.getItem(storage)||'null')}catch{session=null}setMode('login');
 async function dareupRestoreDuo(){
