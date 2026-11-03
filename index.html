@@ -1431,4 +1431,91 @@ $('v99ReportCancel').onclick=()=>{modal.hidden=true};modal.addEventListener('cli
 $('v99ReportForm').onsubmit=async e=>{e.preventDefault();const b=$('v99ReportSend');b.disabled=true;$('v99ReportStatus').textContent='Envoi…';try{const s=JSON.parse(localStorage.getItem('dareup_v4_session')||'null');const stored=JSON.parse(sessionStorage.getItem('dareup_active_duo')||'null');const room=stored?.room;if(!room?.id||!s?.user?.id)throw Error('Partie introuvable.');const partner=room.player1_id===s.user.id?room.player2_id:room.player1_id;if(!partner)throw Error('Partenaire introuvable.');await rpc('dareup_report_player_v99',{p_reported_id:partner,p_room_id:room.id,p_reason:$('v99Reason').value,p_details:$('v99Details').value.trim()});$('v99ReportStatus').textContent='✅ Signalement envoyé.';setTimeout(()=>{modal.hidden=true},1100)}catch(err){$('v99ReportStatus').textContent='⚠️ '+err.message}finally{b.disabled=false}};
 async function loadReports(){const list=$('v99ReportsList'),status=$('v99AdminStatus');list.replaceChildren();status.textContent='Chargement…';try{const filter=$('v99ReportFilter').value;const rows=await rpc('dareup_admin_reports_v99',{p_status:filter==='all'?null:filter,p_limit:100});status.textContent=(rows?.length||0)+' signalement(s).';for(const r of rows||[]){const box=document.createElement('div');box.className='v99AdminItem';const h=document.createElement('strong');h.textContent=(r.reported_username||'Joueur sans pseudo')+' · '+r.reason;box.append(h);for(const val of ['Statut : '+r.status,'Date : '+new Date(r.created_at).toLocaleString('fr-FR'),'Détails : '+(r.details||'Aucun détail')]){const p=document.createElement('p');p.textContent=val;box.append(p)}if(r.status==='pending'){const actions=document.createElement('div');actions.className='v99AdminActions';for(const [state,label] of [['reviewed','✓ Examiné'],['dismissed','✕ Rejeter']]){const b=document.createElement('button');b.type='button';b.className=state==='reviewed'?'primary':'outline';b.textContent=label;b.onclick=async()=>{b.disabled=true;try{await rpc('dareup_admin_review_report_v99',{p_report_id:r.id,p_status:state});await loadReports()}catch(err){status.textContent='⚠️ '+err.message;b.disabled=false}};actions.append(b)}box.append(actions)}list.append(box)}}catch(err){status.textContent='⚠️ '+err.message+' — Vérifie le SQL V9.9.'}}
 $('v99ReportsReload').onclick=loadReports;$('v99ReportFilter').onchange=loadReports;document.querySelector('[data-admin-v981="moderation"]')?.addEventListener('click',loadReports);
-})();</script></body></html>
+})();</script>
+<style id="dareup-suspension-v994-style">
+#dareupSuspensionNotice[hidden]{display:none!important}
+#dareupSuspensionNotice{position:fixed;inset:0;z-index:99999;background:rgba(14,8,28,.94);display:flex;align-items:center;justify-content:center;padding:20px;color:white}
+#dareupSuspensionNotice .noticeCard{width:min(420px,100%);border:1px solid #8d5bc3;border-radius:22px;background:#241435;padding:25px 20px;text-align:center;box-shadow:0 16px 50px #0007}
+#dareupSuspensionNotice .noticeInfo{text-align:left;border-radius:12px;background:#38244d;padding:15px;margin:18px 0;overflow-wrap:anywhere}
+#dareupSuspensionNotice .noticeInfo small{display:block;color:#d6bde9;margin-bottom:5px}
+#dareupSuspensionNotice .noticeInfo strong{display:block;margin-bottom:12px}
+#dareupSuspensionNotice .noticeInfo strong:last-child{margin-bottom:0}
+#dareupSuspensionNotice p{color:#e0d4ed}
+</style>
+<div id="dareupSuspensionNotice" role="dialog" aria-modal="true" aria-labelledby="dareupSuspensionHeading" hidden>
+ <div class="noticeCard">
+  <div style="font-size:42px">🛡️</div>
+  <h2 id="dareupSuspensionHeading">Compte suspendu</h2>
+  <p>Ton accès aux parties DAREUP est temporairement désactivé.</p>
+  <div class="noticeInfo">
+   <small>Motif</small><strong id="dareupSuspensionReason">Suspension du compte</strong>
+   <small>Fin de suspension</small><strong id="dareupSuspensionUntil">Non communiquée</strong>
+  </div>
+  <button type="button" class="primary" id="dareupSuspensionClose">Retour à l'accueil</button>
+ </div>
+</div>
+<script id="dareup-suspension-v994-script">
+(function(){
+'use strict';
+const box=document.getElementById('dareupSuspensionNotice');
+const reason=document.getElementById('dareupSuspensionReason');
+const until=document.getElementById('dareupSuspensionUntil');
+const URL='https://ninutrrrcwwnsclapaxq.supabase.co/rest/v1/rpc/';
+const KEY='sb_publishable_7QqdgO3kk9qQ2mThUhUC-A_gmhkDAZ8';
+let dismissed=false,checking=false,lastUser='',lastCheck=0;
+function session(){
+ try{return JSON.parse(localStorage.getItem('dareup_v4_session')||'null')}catch{return null}
+}
+async function rpc(name,token){
+ const res=await fetch(URL+name,{
+  method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+token,'Content-Type':'application/json'},
+  body:'{}',cache:'no-store'
+ });
+ if(!res.ok)throw Error('Impossible de vérifier la suspension');
+ return res.json();
+}
+function row(v){return Array.isArray(v)?(v[0]||{}):(v&&typeof v==='object'?v:{})}
+async function verify(){
+ if(checking)return;
+ const s=session(),uid=s?.user?.id||'';
+ if(uid!==lastUser){lastUser=uid;dismissed=false;box.hidden=true}
+ if(!s?.access_token){box.hidden=true;return}
+ checking=true;
+ try{
+  const allowed=await rpc('dareup_can_play_v992',s.access_token);
+  lastCheck=Date.now();
+  if(allowed!==false){box.hidden=true;dismissed=false;return}
+  let data={};
+  try{data=row(await rpc('dareup_my_suspension_v991',s.access_token))}catch{}
+  reason.textContent=String(data.reason||data.suspension_reason||'Suspension du compte');
+  const end=data.suspended_until||data.until||data.ends_at;
+  if(end){
+   const date=new Date(end);
+   until.textContent=Number.isNaN(date.getTime())?'Date indisponible':date.toLocaleString('fr-FR',{dateStyle:'long',timeStyle:'short'});
+  }else until.textContent='Durée indéterminée ou non communiquée';
+  if(!dismissed)box.hidden=false;
+ }catch(err){
+  // Do not block a player because of a temporary network error.
+  console.warn('DAREUP : vérification suspension indisponible',err);
+ }finally{checking=false}
+}
+document.getElementById('dareupSuspensionClose').addEventListener('click',()=>{
+ dismissed=true;
+ box.hidden=true;
+ const home=document.getElementById('home');
+ if(home){
+  document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el===home));
+  window.scrollTo(0,0);
+ }
+});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)verify()});
+window.addEventListener('focus',verify);
+setInterval(()=>{
+ const panel=document.getElementById('duoPanel');
+ if((panel&&!panel.hidden)||!box.hidden)verify();
+},12000);
+setTimeout(verify,1600);
+window.dareupVerifySuspension=verify;
+})();
+</script>
+</body></html>
