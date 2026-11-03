@@ -1528,4 +1528,70 @@ setTimeout(verify,1600);
 window.dareupVerifySuspension=verify;
 })();
 </script>
+
+<style id="dareup-v101-style">
+#dareupV101[hidden]{display:none!important}#dareupV101{position:fixed;inset:0;z-index:9000;overflow-y:auto;background:linear-gradient(155deg,#1d122b,#3a1d45 65%,#271632);color:#fff;padding:22px 16px 40px;font-family:inherit}
+#dareupV101 .v101wrap{max-width:480px;margin:auto}#dareupV101 .v101head{display:flex;align-items:center;justify-content:space-between;margin-bottom:25px}#dareupV101 h2{font-size:25px;margin:14px 0}#dareupV101 p{color:#e3d4ea;line-height:1.5}#dareupV101 .v101grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}#dareupV101 button{font:inherit;cursor:pointer;color:#fff;border:1px solid #865a9b;background:#503060;border-radius:15px;padding:14px;text-align:center}#dareupV101 button:disabled{opacity:.5;cursor:not-allowed}#dareupV101 button.v101card{min-height:122px;display:flex;flex-direction:column;justify-content:center;gap:10px}#dareupV101 button.v101primary{width:100%;background:#9a3f82;border-color:#b46c9f;font-weight:bold}#dareupV101 .v101note{font-size:13px;color:#d5bbdc}#dareupV101 input{width:100%;box-sizing:border-box;background:#392543;border:1px solid #84618c;color:white;border-radius:12px;padding:13px;margin:7px 0 15px;font:inherit}#dareupV101 .v101question{padding:24px 15px;border-radius:18px;background:#492c56;font-size:22px;font-weight:700;text-align:center;line-height:1.4;margin:18px 0}#dareupV101 .v101answer{width:100%;margin-bottom:10px}#dareupV101 .v101reveal{padding:18px;border-radius:15px;background:#4b3059;margin:20px 0;text-align:center}#dareupV101 .v101pill{display:inline-block;background:#673b69;padding:7px 12px;border-radius:20px;font-size:12px}#dareupV101 .v101status{font-size:14px;text-align:center;color:#eacbe7}
+</style>
+<div id="dareupV101" hidden role="dialog" aria-label="Choisir un jeu DAREUP"><div class="v101wrap">
+ <div class="v101head"><strong>✦ DAREUP <span style="color:#ffadd3">LOVE</span></strong><button type="button" id="v101Back">← Retour</button></div>
+ <div id="v101Content"></div>
+</div></div>
+<script id="dareup-v101-script">
+(function(){'use strict';
+const questions={"romance": ["Qui est le plus romantique ?", "Qui fait le plus souvent le premier pas pour un câlin ?", "Qui se souvient le mieux des dates importantes ?", "Qui prépare le plus de surprises ?", "Qui dit le plus souvent « je t’aime » ?", "Qui est le plus attentionné ?", "Qui aime le plus les rendez-vous surprises ?", "Qui écrit les messages les plus tendres ?", "Qui est le plus sentimental ?", "Qui propose le plus souvent de passer du temps à deux ?"], "quotidien": ["Qui est le plus en retard ?", "Qui oublie le plus souvent ses clés ?", "Qui cuisine le plus souvent ?", "Qui met le plus de temps à se préparer ?", "Qui est le plus désordonné ?", "Qui choisit le film du soir ?", "Qui fait le plus de grasses matinées ?", "Qui dépense le plus en petites envies ?", "Qui est le plus accro à son téléphone ?", "Qui lance le plus souvent une machine à laver ?"], "hot": ["Qui est le plus charmeur ?", "Qui initie le plus souvent un baiser ?", "Qui aime le plus les compliments coquins ?", "Qui propose le plus souvent une soirée romantique ?", "Qui est le plus tactile ?", "Qui aime le plus les regards complices ?", "Qui prend le plus souvent l’initiative pour un moment intime ?", "Qui est le plus à l’aise pour parler de ses envies ?", "Qui aime le plus les surprises sensuelles ?", "Qui flirte le plus avec son partenaire ?"], "hard": ["Qui ose le plus avouer ses fantasmes ?", "Qui est le plus audacieux dans ses propositions intimes ?", "Qui aime le plus sortir de sa zone de confort ?", "Qui serait le plus à l’aise pour parler de ses limites ?", "Qui est le plus direct sur ses désirs ?", "Qui préfère prendre les initiatives ?", "Qui serait le plus tenté par un jeu de rôle consenti ?", "Qui est le plus curieux de nouvelles expériences à deux ?", "Qui pose les questions les plus osées ?", "Qui ose le plus faire une déclaration très personnelle ?"]};
+const modes={romance:['💕','Romance'],quotidien:['🏠','Vie quotidienne'],hot:['🔥','Hot · 18+'],hard:['😈','Hard · 18+']};
+const overlay=document.getElementById('dareupV101'),content=document.getElementById('v101Content'),back=document.getElementById('v101Back');
+let step='games',category='romance',idx=0,pseudos=['Joueur 1','Joueur 2'],answers=[null,null],phase=0,agreement=0,played=0,order=[],entry=null,kind='local';
+function esc(t){return String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function open(){overlay.hidden=false;step='games';render()}
+function close(){overlay.hidden=true;step='games';entry=null}
+function button(label,fn,cls=''){const b=document.createElement('button');b.type='button';b.textContent=label;b.className=cls;b.addEventListener('click',fn);return b}
+function set(html){content.innerHTML=html}
+function grid(){const g=document.createElement('div');g.className='v101grid';content.append(g);return g}
+function chooseOriginal(){close();if(entry)entry.click();else document.getElementById('homeLocal')?.click()}
+function render(){
+ if(step==='games'){
+ set('<h2>Choisis ton jeu</h2><p>Deux façons de jouer, une seule application.</p>');const g=grid();g.append(button('⚡ Action ou Vérité',()=>{step='original';render()},'v101card'),button('❤️ Qui est le plus ?\nSpécial Couple',()=>{step='modes';render()},'v101card'));return;
+ }
+ if(step==='original'){
+ set('<h2>⚡ Action ou Vérité</h2><p>Retrouve tes modes et tes règles habituels.</p>');const g=grid();g.append(button('🎮 Local',()=>{entry=document.getElementById('homeLocal');chooseOriginal()},'v101card'),button('❤️ Duo privé',()=>{entry=document.getElementById('homePrivate');chooseOriginal()},'v101card'),button('🎲 Aléatoire',()=>{entry=document.getElementById('homeRandom');chooseOriginal()},'v101card'));return;
+ }
+ if(step==='modes'){
+ set('<h2>❤️ Qui est le plus ?</h2><p>Choisissez la personne qui correspond le mieux à la question. Vos réponses seront révélées ensemble.</p>');const g=grid();Object.entries(modes).forEach(([key,[emoji,label]])=>g.append(button(emoji+' '+label,()=>{category=key;step='access';render()},'v101card')));return;
+ }
+ if(step==='access'){
+ set('<h2>'+modes[category][0]+' '+modes[category][1]+'</h2><p>Comment souhaitez-vous jouer ?</p>');const g=grid();g.append(button('📱 Local\nUn téléphone',()=>{kind='local';step='names';render()},'v101card'),button('🔒 Duo privé\nDeux téléphones',()=>{kind='private';step='private';render()},'v101card'));if(category==='hot'||category==='hard')content.append(button('Continuer uniquement si les deux joueurs ont 18 ans ou plus',()=>{step='access';render()},'v101primary'));return;
+ }
+ if(step==='private'){
+ set('<h2>🔒 Duo privé</h2><p>La synchronisation des réponses de « Qui est le plus ? » entre deux téléphones sera ajoutée lors de la prochaine étape Supabase.</p><p class="v101note">Le Duo privé Action ou Vérité existant reste disponible et inchangé.</p>');content.append(button('Jouer à Action ou Vérité en Duo privé',()=>{entry=document.getElementById('homePrivate');chooseOriginal()},'v101primary'));return;
+ }
+ if(step==='names'){
+ set('<h2>👫 Vos pseudos</h2><p>Un seul téléphone : chaque joueur répond à son tour, sans montrer son choix.</p><label>Joueur 1</label><input id="v101Name1" maxlength="24" autocomplete="off"><label>Joueur 2</label><input id="v101Name2" maxlength="24" autocomplete="off">');content.querySelector('#v101Name1').value=pseudos[0];content.querySelector('#v101Name2').value=pseudos[1];content.append(button('Commencer la partie',()=>{pseudos=[document.getElementById('v101Name1').value.trim()||'Joueur 1',document.getElementById('v101Name2').value.trim()||'Joueur 2'];idx=0;agreement=0;played=0;answers=[null,null];phase=0;order=[...questions[category]].sort(()=>Math.random()-.5);step='question';render()},'v101primary'));return;
+ }
+ if(step==='question'){
+ if(idx>=order.length){step='end';render();return}
+ const who=phase===0?0:1;
+ set('<span class="v101pill">'+esc(modes[category][1])+' · Question '+(idx+1)+' / '+order.length+'</span><div class="v101question">'+esc(order[idx])+'</div>');
+ if(phase===2){
+  played++;if(answers[0]===answers[1])agreement++;
+  const name1=esc(pseudos[answers[0]]),name2=esc(pseudos[answers[1]]);
+  set(content.innerHTML+'<div class="v101reveal"><strong>'+(answers[0]===answers[1]?'❤️ Vous êtes d’accord !':'😄 Vous avez choisi différemment !')+'</strong><p>'+esc(pseudos[0])+' a choisi <b>'+name1+'</b></p><p>'+esc(pseudos[1])+' a choisi <b>'+name2+'</b></p></div><p class="v101status">Accords : '+agreement+' / '+played+'</p>');
+  content.append(button(idx===order.length-1?'Voir le bilan':'Question suivante →',()=>{idx++;phase=0;answers=[null,null];render()},'v101primary'));return;
+ }
+ content.insertAdjacentHTML('beforeend','<p class="v101status">Au tour de <b>'+esc(pseudos[who])+'</b>. Choisis en secret.</p>');
+ for(let choice=0;choice<2;choice++)content.append(button(pseudos[choice],()=>{answers[who]=choice;phase=who===0?3:2;render()},'v101answer'));
+ if(phase===3){set('<h2>🔒 Réponse enregistrée</h2><p>Ne montre pas ton choix ! Passe maintenant le téléphone à <b>'+esc(pseudos[1])+'</b>.</p>');content.append(button('Je suis '+pseudos[1]+' · Répondre',()=>{phase=1;render()},'v101primary'))}
+ return;
+ }
+ if(step==='end'){
+ set('<h2>❤️ Partie terminée</h2><div class="v101reveal"><strong>'+agreement+' réponses identiques sur '+played+'</strong><p>Vous avez partagé '+(played?Math.round(100*agreement/played):0)+' % des choix !</p></div>');content.append(button('Rejouer',()=>{step='names';render()},'v101primary'));return;
+ }
+}
+back.addEventListener('click',()=>{if(step==='games'){close();return}if(step==='original'||step==='modes'){step='games'}else if(step==='access'){step='modes'}else if(step==='private'||step==='names'){step='access'}else if(step==='question'||step==='end'){step='modes'}else step='games';render()});
+// Capture only the three existing game-entry buttons. Other home features remain untouched.
+['homeLocal','homePrivate','homeRandom'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;btn.addEventListener('click',e=>{if(btn.dataset.v101Pass==='1'){btn.dataset.v101Pass='0';return}e.stopImmediatePropagation();e.preventDefault();open()},true)});
+function chooseOriginal(){const btn=entry;close();if(btn){btn.dataset.v101Pass='1';btn.click()}}
+})();
+</script>
 </body></html>
