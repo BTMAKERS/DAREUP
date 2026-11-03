@@ -499,7 +499,11 @@ body.duoChatOpen{overflow:hidden!important}
 <button class="homeModeCard" id="homePrivate" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>DUO PRIVÉ</strong><small>Invite ton partenaire avec un code et joue à deux en ligne</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homeRandom" type="button"><span class="homeModeIcon">🎲</span><span class="homeModeText"><strong>MODE ALÉATOIRE</strong><small>Trouve un partenaire en ligne · 2 matchs gratuits</small></span><span class="homeModeArrow">›</span></button>
 </div>
-<button class="homeModeCard v102category v102love" id="v102Couple" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>QUI EST LE PLUS ?</strong><small>Spécial Couple · Local ou Duo privé</small></span><span class="homeModeArrow">›</span></button>
+<button class="homeModeCard v102category v102love" id="v102Couple" type="button" aria-expanded="false" aria-controls="v103CoupleOptions"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>QUI EST LE PLUS ?</strong><small>Spécial Couple · Local ou Duo privé</small></span><span class="homeModeArrow">⌄</span></button>
+<div id="v103CoupleOptions" hidden>
+<button class="homeModeCard" id="v103CoupleLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Jouez à deux sur le même téléphone · Réponses secrètes</small></span><span class="homeModeArrow">›</span></button>
+<button class="homeModeCard" id="v103CouplePrivate" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>DUO PRIVÉ</strong><small>Deux téléphones · Synchronisation bientôt disponible</small></span><span class="homeModeArrow">›</span></button>
+</div>
 <button class="homeModeCard" id="homeFriends" type="button"><span class="homeModeIcon">👥</span><span class="homeModeText"><strong>MES AMIS</strong><small>Retrouve tes amis et gère les invitations reçues</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homeProfile" type="button"><span class="homeModeIcon">👤</span><span class="homeModeText"><strong>MON PROFIL</strong><small>Photo de profil, pseudo et bio</small></span><span class="homeModeArrow">›</span></button><button class="homeModeCard" id="homeSuggest" type="button"><span class="homeModeIcon">💡</span><span class="homeModeText"><strong>PROPOSER UNE QUESTION</strong><small>Envoie tes idées à l'équipe DAREUP</small></span><span class="homeModeArrow">›</span></button><button class="homeModeCard" id="homeAdmin" type="button" hidden><span class="homeModeIcon">🛡️</span><span class="homeModeText"><strong>ESPACE ADMINISTRATEUR</strong><small>Gérer les cartes Action et Vérité</small></span><span class="homeModeArrow">›</span></button></div><p class="homeModeHint">🔐 Les modes en ligne nécessitent un compte DAREUP.</p>
 
@@ -1596,14 +1600,14 @@ function render(){
 back.addEventListener('click',()=>{if(step==='access'){close();return}if(step==='modes'){step='access'}else if(step==='private'||step==='names'){step='modes'}else if(step==='question'||step==='end'){step='modes'}else{close();return}render()});
 // V10.2: the existing game buttons remain native; no capture/interception.
 function chooseOriginal(){const btn=entry;close();if(btn)btn.click()}
-window.dareupOpenCouple=function(){kind='local';step='access';overlay.hidden=false;render()};
+window.dareupOpenCouple=function(selectedKind){kind=selectedKind==='private'?'private':'local';step='modes';overlay.hidden=false;render()};
 })();
 </script>
 
 <style id="v102-home-style">
-#v102ActionOptions[hidden]{display:none!important}
-#v102ActionOptions{display:grid;gap:9px;padding:0 0 12px 18px;border-left:2px solid #8956bb;margin-left:20px}
-#v102ActionOptions .homeModeCard{width:100%;min-width:0}
+#v102ActionOptions[hidden],#v103CoupleOptions[hidden]{display:none!important}
+#v102ActionOptions,#v103CoupleOptions{display:grid;gap:9px;padding:0 0 12px 18px;border-left:2px solid #8956bb;margin-left:20px}
+#v102ActionOptions .homeModeCard,#v103CoupleOptions .homeModeCard{width:100%;min-width:0}
 .v102category{border:1px solid rgba(189,142,248,.45)!important;background:linear-gradient(110deg,#493069,#352049)!important}
 .v102love{background:linear-gradient(110deg,#723457,#46263d)!important;border-color:rgba(255,151,197,.4)!important}
 #dareupV101 .v101head strong span{display:none}
@@ -1612,7 +1616,11 @@ window.dareupOpenCouple=function(){kind='local';step='access';overlay.hidden=fal
 (function(){'use strict';
 const toggle=document.getElementById('v102Action');const options=document.getElementById('v102ActionOptions');
 toggle.addEventListener('click',()=>{const expanded=toggle.getAttribute('aria-expanded')==='true';toggle.setAttribute('aria-expanded',String(!expanded));options.hidden=expanded;});
-document.getElementById('v102Couple').addEventListener('click',()=>window.dareupOpenCouple?.());
+const couple=document.getElementById('v102Couple');
+const coupleOptions=document.getElementById('v103CoupleOptions');
+couple.addEventListener('click',()=>{const expanded=couple.getAttribute('aria-expanded')==='true';couple.setAttribute('aria-expanded',String(!expanded));coupleOptions.hidden=expanded;});
+document.getElementById('v103CoupleLocal').addEventListener('click',()=>window.dareupOpenCouple?.('local'));
+document.getElementById('v103CouplePrivate').addEventListener('click',()=>window.dareupOpenCouple?.('private'));
 })();
 </script>
 </body></html>
