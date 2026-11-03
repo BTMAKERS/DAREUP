@@ -1500,24 +1500,20 @@ async function verify(){
  }finally{checking=false}
 }
 document.getElementById('dareupSuspensionClose').addEventListener('click',()=>{
- // Close the active Duo UI before navigating: the chat is a separate panel.
- try{if(typeof stopDuo==='function')stopDuo()}catch(err){console.warn('Fermeture Duo',err)}
- try{if(typeof stopPolling==='function')stopPolling()}catch(err){console.warn('Arrêt recherche',err)}
- try{if(typeof matchRoom!=='undefined')matchRoom=null}catch(err){}
+ // The Duo controller and its navigation functions live in a separate closure.
+ // Close its UI and clear the resume marker without calling inaccessible functions.
+ try{sessionStorage.removeItem('dareup_active_duo')}catch(err){}
+ const panel=document.getElementById('duoPanel');
+ if(panel){panel.hidden=true;panel.classList.remove('duoMinimized');}
  const matchFound=document.getElementById('matchFound');
  if(matchFound)matchFound.hidden=true;
  const rules=document.getElementById('dareupV94Rules');
  if(rules)rules.remove();
- const panel=document.getElementById('duoPanel');
- if(panel)panel.hidden=true;
  document.body.classList.remove('duoChatOpen');
- // Use the app's own navigation helper when available.
- try{
-  if(typeof show==='function')show('home');
-  else document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.id==='home'));
- }catch(err){
-  document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.id==='home'));
- }
+ // Navigation is implemented with the .screen.active class, not a global show().
+ document.querySelectorAll('.screen').forEach(el=>{
+   el.classList.toggle('active',el.id==='home');
+ });
  dismissed=true;
  box.hidden=true;
  window.scrollTo(0,0);
