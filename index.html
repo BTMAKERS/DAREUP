@@ -493,9 +493,13 @@ body.duoChatOpen{overflow:hidden!important}
  <a class="btmLink" href="https://btmakers.fr" target="_blank" rel="noopener noreferrer sponsored">🛍️ Découvrir la boutique ↗</a>
 </aside>
 <div class="homeModeGrid">
+<button class="homeModeCard v102category" id="v102Action" type="button" aria-expanded="false" aria-controls="v102ActionOptions"><span class="homeModeIcon">⚡</span><span class="homeModeText"><strong>ACTION OU VÉRITÉ</strong><small>Tous les modes de jeu existants</small></span><span class="homeModeArrow">⌄</span></button>
+<div id="v102ActionOptions" hidden>
 <button class="homeModeCard" id="homeLocal" type="button"><span class="homeModeIcon">🎮</span><span class="homeModeText"><strong>MODE LOCAL</strong><small>Joue sur le même téléphone, sans connexion ni compte · 2 à 15 joueurs</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homePrivate" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>DUO PRIVÉ</strong><small>Invite ton partenaire avec un code et joue à deux en ligne</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homeRandom" type="button"><span class="homeModeIcon">🎲</span><span class="homeModeText"><strong>MODE ALÉATOIRE</strong><small>Trouve un partenaire en ligne · 2 matchs gratuits</small></span><span class="homeModeArrow">›</span></button>
+</div>
+<button class="homeModeCard v102category v102love" id="v102Couple" type="button"><span class="homeModeIcon">❤️</span><span class="homeModeText"><strong>QUI EST LE PLUS ?</strong><small>Spécial Couple · Local ou Duo privé</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homeFriends" type="button"><span class="homeModeIcon">👥</span><span class="homeModeText"><strong>MES AMIS</strong><small>Retrouve tes amis et gère les invitations reçues</small></span><span class="homeModeArrow">›</span></button>
 <button class="homeModeCard" id="homeProfile" type="button"><span class="homeModeIcon">👤</span><span class="homeModeText"><strong>MON PROFIL</strong><small>Photo de profil, pseudo et bio</small></span><span class="homeModeArrow">›</span></button><button class="homeModeCard" id="homeSuggest" type="button"><span class="homeModeIcon">💡</span><span class="homeModeText"><strong>PROPOSER UNE QUESTION</strong><small>Envoie tes idées à l'équipe DAREUP</small></span><span class="homeModeArrow">›</span></button><button class="homeModeCard" id="homeAdmin" type="button" hidden><span class="homeModeIcon">🛡️</span><span class="homeModeText"><strong>ESPACE ADMINISTRATEUR</strong><small>Gérer les cartes Action et Vérité</small></span><span class="homeModeArrow">›</span></button></div><p class="homeModeHint">🔐 Les modes en ligne nécessitent un compte DAREUP.</p>
 
@@ -1557,11 +1561,12 @@ function render(){
  if(step==='original'){
  set('<h2>⚡ Action ou Vérité</h2><p>Retrouve tes modes et tes règles habituels.</p>');const g=grid();g.append(button('🎮 Local',()=>{entry=document.getElementById('homeLocal');chooseOriginal()},'v101card'),button('❤️ Duo privé',()=>{entry=document.getElementById('homePrivate');chooseOriginal()},'v101card'),button('🎲 Aléatoire',()=>{entry=document.getElementById('homeRandom');chooseOriginal()},'v101card'));return;
  }
- if(step==='modes'){
- set('<h2>❤️ Qui est le plus ?</h2><p>Choisissez la personne qui correspond le mieux à la question. Vos réponses seront révélées ensemble.</p>');const g=grid();Object.entries(modes).forEach(([key,[emoji,label]])=>g.append(button(emoji+' '+label,()=>{category=key;step='access';render()},'v101card')));return;
- }
  if(step==='access'){
- set('<h2>'+modes[category][0]+' '+modes[category][1]+'</h2><p>Comment souhaitez-vous jouer ?</p>');const g=grid();g.append(button('📱 Local\nUn téléphone',()=>{kind='local';step='names';render()},'v101card'),button('🔒 Duo privé\nDeux téléphones',()=>{kind='private';step='private';render()},'v101card'));if(category==='hot'||category==='hard')content.append(button('Continuer uniquement si les deux joueurs ont 18 ans ou plus',()=>{step='access';render()},'v101primary'));return;
+ set('<h2>❤️ Qui est le plus ?</h2><p>Spécial Couple · Choisis comment jouer.</p>');const g=grid();
+ g.append(button('📱 Mode local\nUn téléphone',()=>{kind='local';step='modes';render()},'v101card'),button('🔒 Duo privé\nDeux téléphones',()=>{kind='private';step='modes';render()},'v101card'));return;
+ }
+ if(step==='modes'){
+ set('<h2>❤️ '+(kind==='local'?'Mode local':'Duo privé')+'</h2><p>Choisis une ambiance.</p>');const g=grid();Object.entries(modes).forEach(([key,[emoji,label]])=>g.append(button(emoji+' '+label,()=>{category=key;step=kind==='local'?'names':'private';render()},'v101card')));return;
  }
  if(step==='private'){
  set('<h2>🔒 Duo privé</h2><p>La synchronisation des réponses de « Qui est le plus ? » entre deux téléphones sera ajoutée lors de la prochaine étape Supabase.</p><p class="v101note">Le Duo privé Action ou Vérité existant reste disponible et inchangé.</p>');content.append(button('Jouer à Action ou Vérité en Duo privé',()=>{entry=document.getElementById('homePrivate');chooseOriginal()},'v101primary'));return;
@@ -1588,10 +1593,26 @@ function render(){
  set('<h2>❤️ Partie terminée</h2><div class="v101reveal"><strong>'+agreement+' réponses identiques sur '+played+'</strong><p>Vous avez partagé '+(played?Math.round(100*agreement/played):0)+' % des choix !</p></div>');content.append(button('Rejouer',()=>{step='names';render()},'v101primary'));return;
  }
 }
-back.addEventListener('click',()=>{if(step==='games'){close();return}if(step==='original'||step==='modes'){step='games'}else if(step==='access'){step='modes'}else if(step==='private'||step==='names'){step='access'}else if(step==='question'||step==='end'){step='modes'}else step='games';render()});
-// Capture only the three existing game-entry buttons. Other home features remain untouched.
-['homeLocal','homePrivate','homeRandom'].forEach(id=>{const btn=document.getElementById(id);if(!btn)return;btn.addEventListener('click',e=>{if(btn.dataset.v101Pass==='1'){btn.dataset.v101Pass='0';return}e.stopImmediatePropagation();e.preventDefault();open()},true)});
-function chooseOriginal(){const btn=entry;close();if(btn){btn.dataset.v101Pass='1';btn.click()}}
+back.addEventListener('click',()=>{if(step==='access'){close();return}if(step==='modes'){step='access'}else if(step==='private'||step==='names'){step='modes'}else if(step==='question'||step==='end'){step='modes'}else{close();return}render()});
+// V10.2: the existing game buttons remain native; no capture/interception.
+function chooseOriginal(){const btn=entry;close();if(btn)btn.click()}
+window.dareupOpenCouple=function(){kind='local';step='access';overlay.hidden=false;render()};
+})();
+</script>
+
+<style id="v102-home-style">
+#v102ActionOptions[hidden]{display:none!important}
+#v102ActionOptions{display:grid;gap:9px;padding:0 0 12px 18px;border-left:2px solid #8956bb;margin-left:20px}
+#v102ActionOptions .homeModeCard{width:100%;min-width:0}
+.v102category{border:1px solid rgba(189,142,248,.45)!important;background:linear-gradient(110deg,#493069,#352049)!important}
+.v102love{background:linear-gradient(110deg,#723457,#46263d)!important;border-color:rgba(255,151,197,.4)!important}
+#dareupV101 .v101head strong span{display:none}
+</style>
+<script id="v102-home-script">
+(function(){'use strict';
+const toggle=document.getElementById('v102Action');const options=document.getElementById('v102ActionOptions');
+toggle.addEventListener('click',()=>{const expanded=toggle.getAttribute('aria-expanded')==='true';toggle.setAttribute('aria-expanded',String(!expanded));options.hidden=expanded;});
+document.getElementById('v102Couple').addEventListener('click',()=>window.dareupOpenCouple?.());
 })();
 </script>
 </body></html>
