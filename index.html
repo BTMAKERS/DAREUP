@@ -1570,7 +1570,20 @@ function render(){
  g.append(button('📱 Mode local\nUn téléphone',()=>{kind='local';step='modes';render()},'v101card'),button('🔒 Duo privé\nDeux téléphones',()=>{kind='private';step='modes';render()},'v101card'));return;
  }
  if(step==='modes'){
- set('<h2>❤️ '+(kind==='local'?'Mode local':'Duo privé')+'</h2><p>Choisis une ambiance.</p>');const g=grid();Object.entries(modes).forEach(([key,[emoji,label]])=>g.append(button(emoji+' '+label,()=>{category=key;step=kind==='local'?'names':'private';render()},'v101card')));return;
+ set('<h2>❤️ '+(kind==='local'?'Mode local':'Duo privé')+'</h2><p>Choisis une ambiance.</p>');
+ const g=document.createElement('div');g.className='v104modeList';content.append(g);
+ const descriptions={romance:'Amour, sentiments et complicité',quotidien:'Habitudes, petites manies et vie à deux',hot:'Questions coquines · Réservé aux adultes',hard:'Questions audacieuses · Réservé aux adultes'};
+ Object.entries(modes).forEach(([key,[emoji,label]])=>{
+  const b=document.createElement('button');b.type='button';b.className='homeModeCard v104modeCard';
+  const ic=document.createElement('span');ic.className='homeModeIcon';ic.textContent=emoji;
+  const tx=document.createElement('span');tx.className='homeModeText';
+  const title=document.createElement('strong');title.textContent=label.toUpperCase();
+  const desc=document.createElement('small');desc.textContent=descriptions[key];
+  tx.append(title,desc);
+  const arrow=document.createElement('span');arrow.className='homeModeArrow';arrow.textContent='›';
+  b.append(ic,tx,arrow);
+  b.addEventListener('click',()=>{category=key;step=kind==='local'?'names':'private';render()});g.append(b);
+ });return;
  }
  if(step==='private'){
  set('<h2>🔒 Duo privé</h2><p>La synchronisation des réponses de « Qui est le plus ? » entre deux téléphones sera ajoutée lors de la prochaine étape Supabase.</p><p class="v101note">Le Duo privé Action ou Vérité existant reste disponible et inchangé.</p>');content.append(button('Jouer à Action ou Vérité en Duo privé',()=>{entry=document.getElementById('homePrivate');chooseOriginal()},'v101primary'));return;
@@ -1623,4 +1636,16 @@ document.getElementById('v103CoupleLocal').addEventListener('click',()=>window.d
 document.getElementById('v103CouplePrivate').addEventListener('click',()=>window.dareupOpenCouple?.('private'));
 })();
 </script>
+<style id="dareup-v104-modes-style">
+#dareupV101 .v104modeList{display:grid;gap:11px;margin-top:20px}
+#dareupV101 button.v104modeCard{width:100%;min-height:105px;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;text-align:left;padding:16px 15px;gap:14px;border-radius:20px;background:linear-gradient(115deg,#31234f,#442552);border:1px solid #9c67ba;box-shadow:0 5px 18px #130a1a45}
+#dareupV101 .v104modeCard .homeModeIcon{font-size:30px;flex:0 0 38px;text-align:center}
+#dareupV101 .v104modeCard .homeModeText{display:flex;flex:1;flex-direction:column;gap:6px;min-width:0}
+#dareupV101 .v104modeCard .homeModeText strong{font-size:16px;color:#fff;letter-spacing:.2px}
+#dareupV101 .v104modeCard .homeModeText small{font-size:12px;line-height:1.35;color:#e2d1ee}
+#dareupV101 .v104modeCard .homeModeArrow{font-size:29px;color:#efc4ff;flex:0 0 12px}
+#dareupV101 .v104modeCard:nth-child(2){background:linear-gradient(115deg,#183552,#25224c);border-color:#5588c2}
+#dareupV101 .v104modeCard:nth-child(3){background:linear-gradient(115deg,#50223d,#44213f);border-color:#b56595}
+#dareupV101 .v104modeCard:nth-child(4){background:linear-gradient(115deg,#342047,#451d4b);border-color:#9555ae}
+</style>
 </body></html>
