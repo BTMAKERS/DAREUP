@@ -1610,7 +1610,7 @@ function render(){
  set('<h2>❤️ Partie terminée</h2><div class="v101reveal"><strong>'+agreement+' réponses identiques sur '+played+'</strong><p>Vous avez partagé '+(played?Math.round(100*agreement/played):0)+' % des choix !</p></div>');content.append(button('Rejouer',()=>{step='names';render()},'v101primary'));return;
  }
 }
-back.addEventListener('click',()=>{if(step==='access'){close();return}if(step==='modes'){step='access'}else if(step==='private'||step==='names'){step='modes'}else if(step==='question'||step==='end'){step='modes'}else{close();return}render()});
+back.addEventListener('click',()=>{if(step==='access'){close();return}if(step==='modes'){close();return}else if(step==='private'||step==='names'){step='modes'}else if(step==='question'||step==='end'){step='modes'}else{close();return}render()});
 // V10.2: the existing game buttons remain native; no capture/interception.
 function chooseOriginal(){const btn=entry;close();if(btn)btn.click()}
 window.dareupOpenCouple=function(selectedKind){kind=selectedKind==='private'?'private':'local';step='modes';overlay.hidden=false;render()};
