@@ -1500,13 +1500,27 @@ async function verify(){
  }finally{checking=false}
 }
 document.getElementById('dareupSuspensionClose').addEventListener('click',()=>{
+ // Close the active Duo UI before navigating: the chat is a separate panel.
+ try{if(typeof stopDuo==='function')stopDuo()}catch(err){console.warn('Fermeture Duo',err)}
+ try{if(typeof stopPolling==='function')stopPolling()}catch(err){console.warn('Arrêt recherche',err)}
+ try{if(typeof matchRoom!=='undefined')matchRoom=null}catch(err){}
+ const matchFound=document.getElementById('matchFound');
+ if(matchFound)matchFound.hidden=true;
+ const rules=document.getElementById('dareupV94Rules');
+ if(rules)rules.remove();
+ const panel=document.getElementById('duoPanel');
+ if(panel)panel.hidden=true;
+ document.body.classList.remove('duoChatOpen');
+ // Use the app's own navigation helper when available.
+ try{
+  if(typeof show==='function')show('home');
+  else document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.id==='home'));
+ }catch(err){
+  document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el.id==='home'));
+ }
  dismissed=true;
  box.hidden=true;
- const home=document.getElementById('home');
- if(home){
-  document.querySelectorAll('.screen').forEach(el=>el.classList.toggle('active',el===home));
-  window.scrollTo(0,0);
- }
+ window.scrollTo(0,0);
 });
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)verify()});
 window.addEventListener('focus',verify);
