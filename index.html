@@ -1589,7 +1589,7 @@ function render(){
  set('<h2>🔒 Duo privé</h2><p>La synchronisation des réponses de « Qui est le plus ? » entre deux téléphones sera ajoutée lors de la prochaine étape Supabase.</p><p class="v101note">Le Duo privé Action ou Vérité existant reste disponible et inchangé.</p>');content.append(button('Jouer à Action ou Vérité en Duo privé',()=>{entry=document.getElementById('homePrivate');chooseOriginal()},'v101primary'));return;
  }
  if(step==='names'){
- set('<h2>👫 Vos pseudos</h2><p>Un seul téléphone : chaque joueur répond à son tour, sans montrer son choix.</p><label>Joueur 1</label><input id="v101Name1" maxlength="24" autocomplete="off"><label>Joueur 2</label><input id="v101Name2" maxlength="24" autocomplete="off">');content.querySelector('#v101Name1').value=pseudos[0];content.querySelector('#v101Name2').value=pseudos[1];content.append(button('Commencer la partie',()=>{pseudos=[document.getElementById('v101Name1').value.trim()||'Joueur 1',document.getElementById('v101Name2').value.trim()||'Joueur 2'];idx=0;agreement=0;played=0;answers=[null,null];phase=0;order=[...questions[category]].sort(()=>Math.random()-.5);step='question';render()},'v101primary'));return;
+ set('<h2>👫 Vos pseudos</h2><p>Un seul téléphone : chaque joueur répond à son tour, sans montrer son choix.</p><label>Joueur 1</label><input id="v101Name1" maxlength="24" autocomplete="off"><label>Joueur 2</label><input id="v101Name2" maxlength="24" autocomplete="off">');content.querySelector('#v101Name1').value=pseudos[0];content.querySelector('#v101Name2').value=pseudos[1];content.append(button('Commencer la partie',()=>{pseudos=[document.getElementById('v101Name1').value.trim()||'Joueur 1',document.getElementById('v101Name2').value.trim()||'Joueur 2'];idx=0;agreement=0;played=0;answers=[null,null];phase=0;order=[...(window.DAREUP_COUPLE_QUESTIONS?.[category]||questions[category])].sort(()=>Math.random()-.5);step='question';render()},'v101primary'));return;
  }
  if(step==='question'){
  if(idx>=order.length){step='end';render();return}
@@ -1648,4 +1648,38 @@ document.getElementById('v103CouplePrivate').addEventListener('click',()=>window
 #dareupV101 .v104modeCard:nth-child(3){background:linear-gradient(115deg,#50223d,#44213f);border-color:#b56595}
 #dareupV101 .v104modeCard:nth-child(4){background:linear-gradient(115deg,#342047,#451d4b);border-color:#9555ae}
 </style>
+<style id="v105-cards-style">
+#v105Cards{margin-top:24px;padding:16px;border:1px solid #81579a;border-radius:16px;background:#24162f}
+#v105Cards label{display:block;margin:12px 0 5px}#v105Cards select,#v105Cards textarea{width:100%;padding:12px;border-radius:10px;background:#342143;color:white;border:1px solid #865ba0;font:inherit}
+#v105Cards .v105item{padding:12px 0;border-bottom:1px solid #604272}#v105Cards .v105item button{margin:4px;padding:9px}
+</style>
+<script id="v105-cards-script">
+(()=>{'use strict';
+const URL='https://ninutrrrcwwnsclapaxq.supabase.co',KEY='sb_publishable_7QqdgO3kk9qQ2mThUhUC-A_gmhkDAZ8',STORAGE='dareup_v4_session';
+const $=id=>document.getElementById(id);
+const fallback={};
+async function session(){let s;try{s=JSON.parse(localStorage.getItem(STORAGE)||'null')}catch{}if(!s?.access_token)return null;
+if(s.expires_at&&Date.now()/1000>s.expires_at-60&&s.refresh_token){const r=await fetch(URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh_token})});if(!r.ok)return null;s=await r.json();localStorage.setItem(STORAGE,JSON.stringify(s))}return s}
+async function api(path,method='GET',body,auth=false){const s=auth?await session():null;if(auth&&!s)throw Error('Connecte-toi comme administrateur.');const r=await fetch(URL+'/rest/v1/'+path,{method,headers:{apikey:KEY,...(s?{Authorization:'Bearer '+s.access_token}:{}),'Content-Type':'application/json',Prefer:'return=representation'},body:body===undefined?undefined:JSON.stringify(body)});const t=await r.text();let d;try{d=t?JSON.parse(t):null}catch{d={message:t}}if(!r.ok)throw Error(d?.message||'Erreur Supabase');return d}
+async function refresh(){try{const cards=await api('dareup_couple_cards?select=category,card_text&active=eq.true&order=created_at.asc&limit=1000');const q={};for(const [k,v] of Object.entries(fallback))q[k]=[...v];for(const c of cards){if(!q[c.category])q[c.category]=[];if(!q[c.category].includes(c.card_text))q[c.category].push(c.card_text)}window.DAREUP_COUPLE_QUESTIONS=q}catch(e){/* Questions embarquées disponibles sans Supabase */}}
+// Garder les questions intégrées : l'extension ne remplace jamais le stock initial.
+const script=$('dareup-v101-script');if(script){const m=script.textContent.match(/const questions=(\{[^;]+\});/);if(m){try{Object.assign(fallback,JSON.parse(m[1]))}catch(e){}}}
+refresh();window.addEventListener('focus',refresh);
+const pane=document.querySelector('[data-admin-v981-pane="cards"]');if(!pane)return;
+const box=document.createElement('section');box.id='v105Cards';box.innerHTML='<h3>❤️ Qui est le plus ? — Gestion des questions</h3><p class="muted">Les questions intégrées restent disponibles. Gère ici les nouvelles questions Supabase.</p><form id="v105Form"><label for="v105Category">Catégorie</label><select id="v105Category"><option value="romance">💕 Romance</option><option value="quotidien">🏠 Quotidien</option><option value="hot">🔥 Hot (18+)</option><option value="hard">😈 Hard (18+)</option></select><label for="v105Text">Question</label><textarea id="v105Text" minlength="3" maxlength="500" required rows="3" placeholder="Qui est le plus… ?"></textarea><button class="primary full" type="submit" id="v105Save">💾 Ajouter la question</button><button class="outline full" type="button" id="v105Cancel" hidden>Annuler la modification</button></form><p id="v105Status" aria-live="polite"></p><button class="secondary" type="button" id="v105Reload">🔄 Actualiser les questions</button><div id="v105List"></div>';
+pane.append(box);let editing=null;
+const status=t=>$('v105Status').textContent=t;
+function reset() {editing=null;$('v105Form').reset();$('v105Save').textContent='💾 Ajouter la question';$('v105Cancel').hidden=true}
+async function load(){try{const cards=await api('dareup_couple_cards?select=*&order=created_at.desc&limit=1000','GET',undefined,true);const list=$('v105List');list.replaceChildren();if(!cards.length){list.textContent='Aucune question ajoutée pour le moment.';return}
+for(const c of cards){const item=document.createElement('div');item.className='v105item';const meta=document.createElement('small');meta.textContent=c.category+' · '+(c.active?'Active':'Désactivée');const txt=document.createElement('p');txt.textContent=c.card_text;
+const edit=document.createElement('button');edit.textContent='✏️ Modifier';edit.onclick=()=>{editing=c.id;$('v105Category').value=c.category;$('v105Text').value=c.card_text;$('v105Save').textContent='💾 Enregistrer';$('v105Cancel').hidden=false;box.scrollIntoView({behavior:'smooth'})};
+const toggle=document.createElement('button');toggle.textContent=c.active?'⏸ Désactiver':'▶ Activer';toggle.onclick=async()=>{try{await api('dareup_couple_cards?id=eq.'+c.id,'PATCH',{active:!c.active},true);await load();await refresh()}catch(e){status(e.message)}};
+const del=document.createElement('button');del.textContent='🗑 Supprimer';del.onclick=async()=>{if(!confirm('Supprimer cette question ?'))return;try{await api('dareup_couple_cards?id=eq.'+c.id,'DELETE',undefined,true);await load();await refresh()}catch(e){status(e.message)}};
+item.append(meta,txt,edit,toggle,del);list.append(item)}}catch(e){status('Chargement impossible : '+e.message)}}
+$('v105Form').addEventListener('submit',async e=>{e.preventDefault();const card={category:$('v105Category').value,card_text:$('v105Text').value.trim()};if(card.card_text.length<3)return status('Question trop courte.');$('v105Save').disabled=true;try{await api(editing?'dareup_couple_cards?id=eq.'+editing:'dareup_couple_cards',editing?'PATCH':'POST',card,true);status('✅ Question enregistrée');reset();await load();await refresh()}catch(err){status('Erreur : '+err.message)}finally{$('v105Save').disabled=false}});
+$('v105Cancel').onclick=reset;$('v105Reload').onclick=load;
+const observer=new MutationObserver(()=>{if($('adminScreen')?.classList.contains('active')&&!pane.hidden)load()});observer.observe(pane,{attributes:true,attributeFilter:['hidden']});
+$('adminOpen')?.addEventListener('click',()=>setTimeout(load,500));$('homeAdmin')?.addEventListener('click',()=>setTimeout(load,500));
+})();
+</script>
 </body></html>
